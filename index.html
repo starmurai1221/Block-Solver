@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v9.0</title>
+    <title>Block Blast Solver v9.4</title>
     <style>
         /* --- 🎨 美術設定 --- */
         :root {
@@ -18,7 +18,10 @@
             --modal-bg: rgba(44, 62, 80, 0.98);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; /* iOS 點擊不閃爍 */
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -27,10 +30,13 @@
             margin: 0; padding: 10px;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
-            /* 恢復捲動，移除 hidden/fixed */
             position: relative;
-            user-select: none; -webkit-user-select: none;
-            padding-bottom: 50px; /* 底部留白 */
+            
+            /* ★★★ 核心修復：全域禁止 iOS 預設長按選單與選取 ★★★ */
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            padding-bottom: 50px; 
         }
 
         body::before {
@@ -80,7 +86,6 @@
             align-items: center; gap: 15px; z-index: 1;
         }
 
-        /* 棋盤 */
         .board-wrapper {
             width: 95vw; max-width: 500px;
             background-color: var(--board-bg);
@@ -88,7 +93,7 @@
             aspect-ratio: 1 / 1;
             display: flex; justify-content: center; align-items: center;
             position: relative;
-            /* ★★★ 關鍵：CSS 告訴瀏覽器這裡不能滑動捲軸，解決 Safari 問題第一步 ★★★ */
+            /* ★★★ 核心修復：強制禁止捲動與縮放 ★★★ */
             touch-action: none; 
         }
 
@@ -103,6 +108,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             gap: 2px; width: 100%; height: 100%;
+            touch-action: none; /* 雙重保險 */
         }
 
         .cell {
@@ -148,7 +154,6 @@
 
         .panel-label { margin-bottom: 5px; font-size: 0.9rem; color: #BDC3C7; text-align: center;}
 
-        /* 手牌區 */
         .hand-area {
             background-color: var(--board-bg);
             height: 90px; border-radius: 8px;
@@ -278,7 +283,7 @@
             <div id="hand" class="hand-area"><span style="color: #777;" data-key="empty">(空)</span></div>
         
             <div class="controls" style="width: 100%; margin-bottom:10px;">
-                <button class="btn-undo" onclick="undoBoard()" data-key="undo">↺ 上一步</button>
+                <button id="btnUndo" class="btn-undo" onclick="undoBoard()" data-key="undo" disabled>↺ 上一步</button>
                 <button class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
             </div>
 
@@ -341,7 +346,7 @@ const TRANSLATIONS = {
         msg_step: "步驟",
         msg_clear: "消",
         msg_row: "行",
-        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li>點擊加入手牌，可重複選擇。</li><li>選單右上角 🗑 可一鍵清空選擇。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li></ul>`
+        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li>點擊加入手牌，可重複選擇。</li><li>選單右上角 🗑 可一鍵清空選擇。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li><li><b>注意：</b> 按下完成後，無法再使用上一步，必須重新開始繪製盤面。</li></ul>`
     },
     en: {
         title: "Block Blast Solver",
@@ -364,7 +369,7 @@ const TRANSLATIONS = {
         msg_step: "Step",
         msg_clear: "Clear",
         msg_row: "lines",
-        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li>Tap to add. Top-right 🗑 clears selection.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li></ul>`
+        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li>Tap to add. Top-right 🗑 clears selection.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li><li><b>Note:</b> After clicking Finish, Undo is disabled until you edit the board again.</li></ul>`
     },
     jp: {
         title: "ブロックパズル解法ツール",
@@ -466,6 +471,7 @@ const selCountEl = document.getElementById('selCount');
 const statusEl = document.getElementById('status');
 const btnNext = document.getElementById('btnNext');
 const btnSolve = document.getElementById('btnSolve');
+const btnUndo = document.getElementById('btnUndo');
 const langMenu = document.getElementById('langMenu');
 const helpText = document.getElementById('helpText');
 
@@ -475,6 +481,15 @@ function init() {
     updateLanguage(); 
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('touchend', () => isDragging = false);
+    
+    // ★★★ 核心修復：強制接管 board 區域的觸控事件，禁止默認行為(捲動/長按) ★★★
+    boardEl.addEventListener('touchstart', onPointerDown, {passive: false});
+    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
+    // 防止長按彈出選單
+    boardEl.oncontextmenu = function(e) { e.preventDefault(); return false; };
+    
+    // 初始化按鈕狀態
+    btnUndo.disabled = true;
 }
 
 // ==================== 語言 ====================
@@ -527,17 +542,15 @@ function renderBoard() {
             }
             cell.dataset.r = r; cell.dataset.c = c;
             
-            // 事件綁定
+            // 滑鼠事件 (電腦版)
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
-            // 觸控：passive: false 允許我們 preventDefault
-            cell.addEventListener('touchstart', onPointerDown, {passive: false});
+            
+            // 觸控事件已經統一綁定在 boardEl 上，這裡不需要重複綁定
             
             boardEl.appendChild(cell);
         }
     }
-    // ★★★ 關鍵：防止捲動，僅在棋盤區域生效 ★★★
-    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
 }
 
 function renderLibraryMenu() {
@@ -628,9 +641,12 @@ function setupLibraryItemEvents(element, name) {
     element.addEventListener('mousedown', startPress);
     element.addEventListener('mouseleave', cancelPress);
     element.addEventListener('mouseup', endPress);
-    element.addEventListener('touchstart', startPress, {passive: false});
-    element.addEventListener('touchmove', cancelPress);
+    
+    // 選單內的觸控可以保留預設行為(捲動)，只攔截點擊
+    element.addEventListener('touchstart', startPress, {passive: true}); 
     element.addEventListener('touchend', endPress);
+    // touchmove 會導致捲動，這裡要取消長按判定
+    element.addEventListener('touchmove', cancelPress, {passive: true}); 
 }
 
 function openLibrary() { updateLibraryUI(); document.getElementById('libModal').classList.add('show'); }
@@ -646,7 +662,10 @@ function addInstanceToHand(name) {
 
 function clearSelection() {
     if(hand.length > 0) {
-        hand = []; renderHand(); updateLibraryUI(); resetSolution();
+        hand = [];
+        renderHand();
+        updateLibraryUI();
+        resetSolution();
     }
 }
 
@@ -688,6 +707,7 @@ function saveState() {
         newlyPlaced: JSON.parse(JSON.stringify(newlyPlacedCells))
     });
     if(boardHistory.length > 20) boardHistory.shift();
+    btnUndo.disabled = false;
 }
 
 function updateCell(r, c) {
@@ -700,17 +720,28 @@ function updateCell(r, c) {
 
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
-    if (e.type === 'touchstart' && e.touches.length > 1) return;
     
-    // ★★★ 阻止預設行為 (如反白、捲動起始) ★★★
-    if (e.cancelable) e.preventDefault();
+    // ★★★ 終極觸控修復：如果事件來自觸控，絕對禁止預設行為 ★★★
+    if (e.type === 'touchstart') {
+        e.preventDefault(); 
+    }
     
-    isDragging = true;
-    const r = parseInt(this.dataset.r);
-    const c = parseInt(this.dataset.c);
-    saveState();
-    paintMode = 1 - board[r][c];
-    updateCell(r, c);
+    // 找出座標
+    let target = e.target;
+    // 如果是觸控，要用 elementFromPoint 找目標
+    if (e.type === 'touchstart') {
+        const touch = e.touches[0];
+        target = document.elementFromPoint(touch.clientX, touch.clientY);
+    }
+
+    if (target && target.classList.contains('cell')) {
+        isDragging = true;
+        const r = parseInt(target.dataset.r);
+        const c = parseInt(target.dataset.c);
+        saveState();
+        paintMode = 1 - board[r][c];
+        updateCell(r, c);
+    }
 }
 
 function onPointerEnter(e) {
@@ -724,13 +755,16 @@ function onPointerEnter(e) {
 
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
-    if (!isDragging) return;
     
-    // ★★★ 關鍵：只要是在棋盤上滑動，就絕對禁止瀏覽器捲動頁面 ★★★
-    if (e.cancelable) e.preventDefault();
+    // ★★★ 終極觸控修復：絕對禁止預設行為 ★★★
+    if(e.cancelable) e.preventDefault();
+    
+    if (!isDragging) return;
     
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // 增加容錯：如果 target 存在且是格子
     if (target && target.classList.contains('cell')) {
         const r = parseInt(target.dataset.r);
         const c = parseInt(target.dataset.c);
@@ -742,18 +776,39 @@ function clearBoard() {
     saveState();
     board = Array(8).fill().map(() => Array(8).fill(0));
     newlyPlacedCells = []; clearingCells = [];
-    hand = []; // 清空手牌
-    renderHand(); updateLibraryUI();
-    renderBoard(); resetSolution(); lockBoard(false); 
+    hand = []; 
+    renderHand();
+    updateLibraryUI();
+    renderBoard(); resetSolution(); lockBoard(false);
+    btnUndo.disabled = true; // 清空後禁止 Undo
 }
 
 function undoBoard() {
+    // 模式 1: 正在執行解法
+    if (solutionSteps.length > 0) {
+        if (currentStepIdx > 0) {
+            if (boardHistory.length > 0) {
+                const state = boardHistory.pop();
+                board = state.board;
+                newlyPlacedCells = state.newlyPlaced || [];
+                currentStepIdx--;
+                previewStep(); 
+            }
+        } else {
+            resetSolution();
+        }
+        return;
+    }
+
+    // 模式 2: 純編輯模式
     if (boardHistory.length > 0) {
         const state = boardHistory.pop();
         board = state.board;
         newlyPlacedCells = state.newlyPlaced || [];
         clearingCells = [];
-        renderBoard(); resetSolution(); lockBoard(false); 
+        renderBoard();
+        
+        if (boardHistory.length === 0) btnUndo.disabled = true;
     }
 }
 
@@ -805,19 +860,23 @@ function solve(currentBoard, pieces) {
         }
         return true;
     }
-    function placeAndClear(b, piece, r, c) {
+    function placeAndCalculate(b, piece, r, c) {
         let newB = b.map(row => [...row]);
         const rows = piece.length; const cols = piece[0].length;
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) { if (piece[i][j]) newB[r + i][c + j] = 1; }
         }
-        let clearR = [], clearC = [];
-        for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR.push(i);
-        for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearC.push(j);
-        let cleared = clearR.length + clearC.length;
+        let clearR = 0, clearC = 0;
+        for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR++;
+        for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearC++;
+        
+        let cleared = clearR + clearC;
         if (cleared > 0) {
-            for(let row of clearR) for(let j=0; j<8; j++) newB[row][j] = 0;
-            for(let col of clearC) for(let i=0; i<8; i++) newB[i][col] = 0;
+            let clearRows = [], clearCols = [];
+            for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearRows.push(i);
+            for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearCols.push(j);
+            for(let row of clearRows) for(let j=0; j<8; j++) newB[row][j] = 0;
+            for(let col of clearCols) for(let i=0; i<8; i++) newB[i][col] = 0;
         }
         return { board: newB, cleared: cleared };
     }
@@ -830,20 +889,26 @@ function solve(currentBoard, pieces) {
         const current = remainingPieces[0];
         const rest = remainingPieces.slice(1);
         const shape = current.shape;
+        
+        let validMoves = [];
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
                 if (canPlace(b, shape, r, c)) {
-                    const res = placeAndClear(b, shape, r, c);
-                    path.push({ name: current.name, r, c, cleared: res.cleared, shape });
-                    backtrack(res.board, rest, path, totalCleared + res.cleared);
-                    path.pop();
-                    if (bestSol) return; 
+                    let result = placeAndCalculate(b, shape, r, c);
+                    validMoves.push({r, c, result});
                 }
             }
         }
+        validMoves.sort((x, y) => y.result.cleared - x.result.cleared);
+        for (let move of validMoves) {
+            path.push({ name: current.name, r: move.r, c: move.c, cleared: move.result.cleared, shape });
+            backtrack(move.result.board, rest, path, totalCleared + move.result.cleared);
+            path.pop();
+            if (bestSol && maxCleared >= 5) return; 
+        }
     }
     const perms = permutations(pieces);
-    for (const p of perms) { backtrack(currentBoard, p, [], 0); if (bestSol) break; }
+    for (const p of perms) { backtrack(currentBoard, p, [], 0); if (bestSol && maxCleared >=5) break; }
     return bestSol;
 }
 
@@ -919,9 +984,12 @@ function previewStep() {
 
 function applyNextStep() {
     const t = TRANSLATIONS[currentLang];
+    // ★★★ Finish 邏輯修改 ★★★
     if (currentStepIdx >= solutionSteps.length) {
         newlyPlacedCells = []; 
         hand = []; renderHand(); updateLibraryUI();
+        boardHistory = []; // 清空歷史 (Commit)
+        btnUndo.disabled = true; // 鎖定 Undo
         resetSolution(); 
         return;
     }
