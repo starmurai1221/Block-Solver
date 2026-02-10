@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v10.0</title>
+    <title>Block Blast Solver v10.1</title>
     <style>
         /* --- 🎨 美術設定 --- */
         :root {
@@ -30,7 +30,7 @@
             position: relative;
             user-select: none; -webkit-user-select: none;
             padding-bottom: 50px; 
-            -webkit-touch-callout: none;
+            -webkit-touch-callout: none; /* 禁止長按選單 */
         }
 
         body::before {
@@ -87,6 +87,7 @@
             aspect-ratio: 1 / 1;
             display: flex; justify-content: center; align-items: center;
             position: relative;
+            /* ★★★ 核心修復：在 Wrapper 層級禁止觸控操作與捲動 ★★★ */
             touch-action: none; 
         }
 
@@ -101,6 +102,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             gap: 2px; width: 100%; height: 100%;
+            /* ★★★ 雙重保險 ★★★ */
             touch-action: none; 
         }
 
@@ -111,6 +113,8 @@
             font-weight: bold; font-size: 1rem; color: white;
             user-select: none;
             background-size: cover; background-position: center; background-repeat: no-repeat;
+            /* ★★★ 讓每個格子都獨立禁止預設行為 ★★★ */
+            touch-action: none;
         }
 
         .cell.filled { background-image: var(--img-filled); }
@@ -530,8 +534,9 @@ function init() {
     document.addEventListener('mouseup', () => { isDragging = false; });
     document.addEventListener('touchend', () => { isDragging = false; });
     
-    boardEl.addEventListener('touchstart', onPointerDown, {passive: false});
-    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
+    // ★★★ 核心修復：使用事件代理監聽每個格子的觸控 ★★★
+    // 由於我們在 renderBoard 裡已經對每個 cell 綁定了事件，這裡就不需要再對 boardEl 綁定了
+    // 移除舊的 boardEl 事件綁定，只保留右鍵選單禁用
     boardEl.oncontextmenu = function(e) { e.preventDefault(); return false; };
     
     btnUndo.disabled = true;
@@ -588,12 +593,18 @@ function renderBoard() {
             }
             cell.dataset.r = r; cell.dataset.c = c;
             
+            // ★★★ v10.1 關鍵：直接對格子綁定事件 ★★★
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
+            
+            // 觸控：passive: false 允許我們 preventDefault
+            cell.addEventListener('touchstart', onPointerDown, {passive: false});
             
             boardEl.appendChild(cell);
         }
     }
+    // 綁定 touchmove 到 boardEl 以處理滑動
+    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
 }
 
 function renderLibraryMenu() {
@@ -665,7 +676,7 @@ function createShapeElement(shape, cellSize) {
     return wrapper;
 }
 
-// ==================== 互動 (Tap & Long Press Fix) ====================
+// ==================== 互動 (Tap Logic Fix) ====================
 function setupLibraryItemEvents(element, name) {
     let pressTimer; let isLongPress = false;
     
@@ -687,7 +698,6 @@ function setupLibraryItemEvents(element, name) {
         if (pressTimer) clearTimeout(pressTimer);
         
         if (!isLongPress) {
-            // 只處理點擊
             if (e.type === 'touchend') e.preventDefault();
             handleTap(name); 
         }
@@ -706,21 +716,21 @@ function openLibrary() { updateLibraryUI(); document.getElementById('libModal').
 function closeModal(id) { document.getElementById(id).classList.remove('show'); hideQtyPopup(); }
 function openHelp() { document.getElementById('helpModal').classList.add('show'); }
 
-// ★★★ 核心修改：單點邏輯 (0->1, >=1 -> -1) ★★★
+// ★★★ 單點邏輯修改：若有則 -1，若無則 +1 ★★★
 function handleTap(name) {
     const count = hand.filter(h => h.name === name).length;
 
     if (count > 0) {
-        // 數量 >= 1 -> 減少一個 (-1)
-        // 找到該方塊在手牌中的最後一個索引位置並移除
+        // 已經有了 -> 減少 1 個
+        // 從後面開始刪，比較符合使用者剛加進去的直覺
         for (let i = hand.length - 1; i >= 0; i--) {
             if (hand[i].name === name) {
-                removeFromHand(i); // 這個函式會處理 UI 更新
-                break; // 只刪除一個
+                removeFromHand(i); 
+                break; 
             }
         }
     } else {
-        // 數量 < 1 (即 0) -> 增加一個 (+1)
+        // 沒有 -> 增加 1 個
         if (hand.length < 3) {
             addToHand(name);
             updateLibraryUI();
@@ -738,7 +748,7 @@ function handleLongPress(e, element, name) {
     qtyPopup.style.top = (rect.top - 50) + 'px';
     qtyPopup.style.left = (rect.left + rect.width/2 - 60) + 'px'; 
     qtyPopup.style.display = 'flex';
-    qtyOverlay.style.display = 'block'; // 顯示遮罩防止誤觸關閉
+    qtyOverlay.style.display = 'block'; 
 }
 
 function hideQtyPopup() {
@@ -827,16 +837,29 @@ function updateCell(r, c) {
     }
 }
 
+// ★★★ 核心修復：指針按下事件 ★★★
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
     if (e.type === 'touchstart' && e.touches.length > 1) return;
-    if (e.cancelable) e.preventDefault();
-    isDragging = true;
-    const r = parseInt(this.dataset.r);
-    const c = parseInt(this.dataset.c);
-    saveState();
-    paintMode = 1 - board[r][c];
-    updateCell(r, c);
+    
+    // 如果是觸控，阻止預設行為(防止捲動開始)
+    if (e.type === 'touchstart') {
+        e.preventDefault(); 
+    }
+    
+    // 因為我們直接綁定在 cell 上，所以 this 就是被點擊的格子
+    // 或者是 e.target (要注意 e.target 可能是格子內的子元素，所以要往上找)
+    // 但因為 cell 裡面目前沒有複雜結構，this 應該是安全的
+    let target = e.currentTarget; 
+
+    if (target && target.classList.contains('cell')) {
+        isDragging = true;
+        const r = parseInt(target.dataset.r);
+        const c = parseInt(target.dataset.c);
+        saveState();
+        paintMode = 1 - board[r][c];
+        updateCell(r, c);
+    }
 }
 
 function onPointerEnter(e) {
@@ -848,12 +871,17 @@ function onPointerEnter(e) {
     }
 }
 
+// ★★★ 核心修復：滑動事件 ★★★
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
     if (!isDragging) return;
-    if (e.cancelable) e.preventDefault();
+    
+    // 絕對阻止捲動
+    if(e.cancelable) e.preventDefault();
+    
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    
     if (target && target.classList.contains('cell')) {
         const r = parseInt(target.dataset.r);
         const c = parseInt(target.dataset.c);
