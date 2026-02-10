@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v9.4</title>
+    <title>Block Blast Solver v10.0</title>
     <style>
         /* --- 🎨 美術設定 --- */
         :root {
@@ -18,10 +18,7 @@
             --modal-bg: rgba(44, 62, 80, 0.98);
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; /* iOS 點擊不閃爍 */
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -31,12 +28,9 @@
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
             position: relative;
-            
-            /* ★★★ 核心修復：全域禁止 iOS 預設長按選單與選取 ★★★ */
-            user-select: none; 
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
+            user-select: none; -webkit-user-select: none;
             padding-bottom: 50px; 
+            -webkit-touch-callout: none;
         }
 
         body::before {
@@ -93,7 +87,6 @@
             aspect-ratio: 1 / 1;
             display: flex; justify-content: center; align-items: center;
             position: relative;
-            /* ★★★ 核心修復：強制禁止捲動與縮放 ★★★ */
             touch-action: none; 
         }
 
@@ -108,7 +101,7 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             gap: 2px; width: 100%; height: 100%;
-            touch-action: none; /* 雙重保險 */
+            touch-action: none; 
         }
 
         .cell {
@@ -204,6 +197,13 @@
         
         .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; border: none; cursor: pointer; line-height: 1; }
         .clear-sel-btn { background: transparent; font-size: 1.5rem; color: #E74C3C; padding: 0; border: none; cursor: pointer; line-height: 1; }
+        
+        .confirm-btn {
+            background-color: #2ECC71; color: white;
+            border: none; padding: 5px 12px; border-radius: 4px;
+            font-size: 0.9rem; cursor: pointer; display: none; 
+            font-weight: bold;
+        }
 
         .category-title {
             width: 100%; max-width: 600px;
@@ -239,6 +239,35 @@
         }
         .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
         .lib-piece.selected .count-badge { display: block; }
+        .lib-piece canvas { max-width: 85%; max-height: 85%; }
+
+        /* 數量選擇器 Popup */
+        .qty-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200; display: none; 
+        }
+        .qty-popup {
+            position: absolute; 
+            background: #34495E;
+            border: 2px solid #2ECC71;
+            border-radius: 12px;
+            padding: 8px;
+            display: none;
+            gap: 10px;
+            z-index: 201;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+        .qty-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: #2ECC71;
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .qty-btn:active { transform: scale(0.9); }
 
         .help-content {
             flex: 1; width: 100%; max-width: 600px;
@@ -284,7 +313,7 @@
         
             <div class="controls" style="width: 100%; margin-bottom:10px;">
                 <button id="btnUndo" class="btn-undo" onclick="undoBoard()" data-key="undo" disabled>↺ 上一步</button>
-                <button class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
+                <button id="btnClear" class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
             </div>
 
             <div id="status" class="status-msg"></div>
@@ -300,12 +329,20 @@
                 <span style="font-size:0.9em; margin-left:5px;">(<span id="selCount">0</span>/3)</span>
             </h2>
             <div class="modal-controls">
+                <button id="btnConfirmSelection" class="confirm-btn" onclick="closeModal('libModal')" data-key="confirm">✔ 確定</button>
                 <button class="clear-sel-btn" onclick="clearSelection()">🗑</button>
                 <button class="close-btn" onclick="closeModal('libModal')">×</button>
             </div>
         </div>
-        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;" data-key="selectHint">點擊累加，長按取消</div>
+        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;" data-key="selectHint">點擊: +1 / -1 | 長按: 數量</div>
         <div id="libContent" class="library-content"></div>
+    </div>
+
+    <div id="qtyOverlay" class="qty-overlay" onclick="hideQtyPopup()"></div> 
+    <div id="qtyPopup" class="qty-popup">
+        <button class="qty-btn" onclick="setQty(1)">1</button>
+        <button class="qty-btn" onclick="setQty(2)">2</button>
+        <button class="qty-btn" onclick="setQty(3)">3</button>
     </div>
 
     <div id="helpModal" class="modal">
@@ -333,10 +370,10 @@ const TRANSLATIONS = {
         calculating: "計算中...",
         next: "執行這一步 ▶",
         finish: "完成 (點擊確認)",
-        handLabel: "本輪方塊",
+        handLabel: "本輪方塊 (點擊減少)",
         empty: "(空)",
         selectTitle: "選擇方塊",
-        selectHint: "點擊累加，長按取消",
+        selectHint: "點擊: +1 / -1 | 長按: 選數量",
         helpTitle: "使用指南",
         contact: "還有問題嗎？寄信給我：",
         categories: ["基本 (點、斜、線)", "方塊 & T型 & Z型", "小 L (3格)", "中 L (4格)", "大 L (5格)"],
@@ -346,7 +383,8 @@ const TRANSLATIONS = {
         msg_step: "步驟",
         msg_clear: "消",
         msg_row: "行",
-        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li>點擊加入手牌，可重複選擇。</li><li>選單右上角 🗑 可一鍵清空選擇。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li><li><b>注意：</b> 按下完成後，無法再使用上一步，必須重新開始繪製盤面。</li></ul>`
+        confirm: "✔ 確定",
+        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li><b>單點：</b>若0則+1，若有則-1。</li><li><b>長按：</b>設定數量 1~3。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li></ul>`
     },
     en: {
         title: "Block Blast Solver",
@@ -356,10 +394,10 @@ const TRANSLATIONS = {
         calculating: "Calculating...",
         next: "Next Step ▶",
         finish: "Finish (Click to Fix)",
-        handLabel: "Current Pieces",
+        handLabel: "Current Pieces (Tap to remove)",
         empty: "(Empty)",
         selectTitle: "Select Pieces",
-        selectHint: "Tap to add, Long press to remove",
+        selectHint: "Tap: +1 / -1 | Hold: Quantity",
         helpTitle: "User Guide",
         contact: "Questions? Email me:",
         categories: ["Basic (Dot, Diag, Line)", "Square & T & Z", "Small L (3)", "Medium L (4)", "Large L (5)"],
@@ -369,7 +407,8 @@ const TRANSLATIONS = {
         msg_step: "Step",
         msg_clear: "Clear",
         msg_row: "lines",
-        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li>Tap to add. Top-right 🗑 clears selection.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li><li><b>Note:</b> After clicking Finish, Undo is disabled until you edit the board again.</li></ul>`
+        confirm: "✔ OK",
+        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li><b>Tap:</b> Add 1 if empty, else Remove 1.</li><li><b>Hold:</b> Set Quantity 1-3.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li></ul>`
     },
     jp: {
         title: "ブロックパズル解法ツール",
@@ -379,10 +418,10 @@ const TRANSLATIONS = {
         calculating: "計算中...",
         next: "次のステップ ▶",
         finish: "完了 (確定する)",
-        handLabel: "手持ちのブロック",
+        handLabel: "手持ち (タップで削除)",
         empty: "(空)",
         selectTitle: "ブロック選択",
-        selectHint: "タップで追加、長押しで削除",
+        selectHint: "タップ: +1 / -1 | 長押し: 数量",
         helpTitle: "使い方",
         contact: "質問がありますか？メール：",
         categories: ["基本 (点, 斜め, 線)", "四角 & T型 & Z型", "小 L (3)", "中 L (4)", "大 L (5)"],
@@ -392,7 +431,8 @@ const TRANSLATIONS = {
         msg_step: "手順",
         msg_clear: "消去",
         msg_row: "行",
-        helpBody: `<h3>1. 盤面設定</h3><ul><li>盤面をスワイプしてブロックを描画/消去します。</li></ul><h3>2. ブロック選択</h3><ul><li>▦ ボタンでメニューを開きます。</li><li>右上の 🗑 で選択をクリアできます。</li></ul><h3>3. 実行</h3><ul><li>「計算する」をタップ。</li><li>緑色は配置場所、金色は消える行です。</li></ul>`
+        confirm: "✔ 確定",
+        helpBody: `<h3>1. 盤面設定</h3><ul><li>盤面をスワイプしてブロックを描画/消去します。</li></ul><h3>2. ブロック選択</h3><ul><li>▦ ボタンでメニューを開きます。</li><li><b>タップ：</b>0なら追加、あれば1つ減らす。</li><li><b>長押し：</b>個数を選択。</li></ul><h3>3. 実行</h3><ul><li>「計算する」をタップ。</li><li>緑色は配置場所、金色は消える行です。</li></ul>`
     },
     kr: {
         title: "블록 블라스트 솔버",
@@ -402,10 +442,10 @@ const TRANSLATIONS = {
         calculating: "계산 중...",
         next: "다음 단계 ▶",
         finish: "완료 (확정)",
-        handLabel: "현재 블록",
+        handLabel: "현재 블록 (탭하여 삭제)",
         empty: "(비어 있음)",
         selectTitle: "블록 선택",
-        selectHint: "탭하여 추가, 길게 눌러 삭제",
+        selectHint: "탭: +1 / -1 | 길게: 수량",
         helpTitle: "사용 가이드",
         contact: "문의 사항:",
         categories: ["기본 (점, 대각선, 선)", "사각형 & T자 & Z자", "소형 L (3)", "중형 L (4)", "대형 L (5)"],
@@ -415,7 +455,8 @@ const TRANSLATIONS = {
         msg_step: "단계",
         msg_clear: "제거",
         msg_row: "줄",
-        helpBody: `<h3>1. 보드 설정</h3><ul><li>보드를 드래그하여 블록을 그립니다.</li></ul><h3>2. 블록 선택</h3><ul><li>▦ 버튼을 눌러 메뉴를 엽니다.</li><li>오른쪽 상단 🗑 버튼으로 선택을 지웁니다.</li></ul><h3>3. 실행</h3><ul><li>"해결하기"를 누릅니다.</li><li>녹색은 배치 위치, 금색은 제거되는 줄입니다.</li></ul>`
+        confirm: "✔ 확인",
+        helpBody: `<h3>1. 보드 설정</h3><ul><li>보드를 드래그하여 블록을 그립니다.</li></ul><h3>2. 블록 선택</h3><ul><li>▦ 버튼을 눌러 메뉴를 엽니다.</li><li><b>탭:</b> 없으면 추가, 있으면 1개 삭제.</li><li><b>길게:</b> 수량 선택.</li></ul><h3>3. 실행</h3><ul><li>"해결하기"를 누릅니다.</li><li>녹색은 배치 위치, 금색은 제거되는 줄입니다.</li></ul>`
     }
 };
 
@@ -462,6 +503,7 @@ let currentStepIdx = 0;
 let isDragging = false;
 let paintMode = 1; 
 let isCalculating = false; 
+let currentLongPressName = null;
 
 const boardWrapper = document.getElementById('boardWrapper');
 const boardEl = document.getElementById('board');
@@ -472,23 +514,26 @@ const statusEl = document.getElementById('status');
 const btnNext = document.getElementById('btnNext');
 const btnSolve = document.getElementById('btnSolve');
 const btnUndo = document.getElementById('btnUndo');
+const btnClear = document.getElementById('btnClear');
 const langMenu = document.getElementById('langMenu');
 const helpText = document.getElementById('helpText');
+const btnConfirmSelection = document.getElementById('btnConfirmSelection');
+const qtyPopup = document.getElementById('qtyPopup');
+const qtyOverlay = document.getElementById('qtyOverlay');
 
 function init() {
     renderBoard();
     renderLibraryMenu(); 
     updateLanguage(); 
-    document.addEventListener('mouseup', () => isDragging = false);
-    document.addEventListener('touchend', () => isDragging = false);
     
-    // ★★★ 核心修復：強制接管 board 區域的觸控事件，禁止默認行為(捲動/長按) ★★★
+    // 這裡只負責重置拖曳狀態，不隱藏 Popup，避免與長按衝突
+    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.addEventListener('touchend', () => { isDragging = false; });
+    
     boardEl.addEventListener('touchstart', onPointerDown, {passive: false});
     boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
-    // 防止長按彈出選單
     boardEl.oncontextmenu = function(e) { e.preventDefault(); return false; };
     
-    // 初始化按鈕狀態
     btnUndo.disabled = true;
 }
 
@@ -506,6 +551,7 @@ function updateLanguage() {
     document.querySelector('[data-key="undo"]').innerText = t.undo;
     document.querySelector('[data-key="clear"]').innerText = t.clear;
     document.querySelector('[data-key="solve"]').innerText = isCalculating ? t.calculating : t.solve;
+    document.querySelector('[data-key="confirm"]').innerText = t.confirm; 
     
     if (btnNext.disabled && currentStepIdx >= solutionSteps.length && solutionSteps.length > 0) {
         btnNext.innerText = t.finish;
@@ -542,11 +588,8 @@ function renderBoard() {
             }
             cell.dataset.r = r; cell.dataset.c = c;
             
-            // 滑鼠事件 (電腦版)
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
-            
-            // 觸控事件已經統一綁定在 boardEl 上，這裡不需要重複綁定
             
             boardEl.appendChild(cell);
         }
@@ -622,42 +665,101 @@ function createShapeElement(shape, cellSize) {
     return wrapper;
 }
 
-// ==================== 互動 ====================
+// ==================== 互動 (Tap & Long Press Fix) ====================
 function setupLibraryItemEvents(element, name) {
     let pressTimer; let isLongPress = false;
+    
     const startPress = (e) => {
         if (e.type === 'touchstart' && e.touches.length > 1) return;
         isLongPress = false;
-        pressTimer = setTimeout(() => { isLongPress = true; handleLongPress(name); }, 500);
+        
+        pressTimer = setTimeout(() => { 
+            isLongPress = true; 
+            handleLongPress(e, element, name); 
+        }, 500);
     };
-    const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
+
+    const cancelPress = () => { 
+        if (pressTimer) clearTimeout(pressTimer); 
+    };
+
     const endPress = (e) => {
         if (pressTimer) clearTimeout(pressTimer);
+        
         if (!isLongPress) {
+            // 只處理點擊
             if (e.type === 'touchend') e.preventDefault();
-            addInstanceToHand(name);
+            handleTap(name); 
         }
     };
+
     element.addEventListener('mousedown', startPress);
     element.addEventListener('mouseleave', cancelPress);
     element.addEventListener('mouseup', endPress);
     
-    // 選單內的觸控可以保留預設行為(捲動)，只攔截點擊
-    element.addEventListener('touchstart', startPress, {passive: true}); 
-    element.addEventListener('touchend', endPress);
-    // touchmove 會導致捲動，這裡要取消長按判定
+    element.addEventListener('touchstart', startPress, {passive: false});
     element.addEventListener('touchmove', cancelPress, {passive: true}); 
+    element.addEventListener('touchend', endPress);
 }
 
 function openLibrary() { updateLibraryUI(); document.getElementById('libModal').classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); hideQtyPopup(); }
 function openHelp() { document.getElementById('helpModal').classList.add('show'); }
 
-function addInstanceToHand(name) {
-    if (hand.length < 3) {
-        addToHand(name); updateLibraryUI();
-        if (hand.length === 3) setTimeout(() => closeModal('libModal'), 200);
+// ★★★ 核心修改：單點邏輯 (0->1, >=1 -> -1) ★★★
+function handleTap(name) {
+    const count = hand.filter(h => h.name === name).length;
+
+    if (count > 0) {
+        // 數量 >= 1 -> 減少一個 (-1)
+        // 找到該方塊在手牌中的最後一個索引位置並移除
+        for (let i = hand.length - 1; i >= 0; i--) {
+            if (hand[i].name === name) {
+                removeFromHand(i); // 這個函式會處理 UI 更新
+                break; // 只刪除一個
+            }
+        }
+    } else {
+        // 數量 < 1 (即 0) -> 增加一個 (+1)
+        if (hand.length < 3) {
+            addToHand(name);
+            updateLibraryUI();
+            checkConfirmButton();
+            renderHand();
+            resetSolution();
+        }
     }
+}
+
+// 長按：顯示數量選擇器
+function handleLongPress(e, element, name) {
+    currentLongPressName = name;
+    const rect = element.getBoundingClientRect();
+    qtyPopup.style.top = (rect.top - 50) + 'px';
+    qtyPopup.style.left = (rect.left + rect.width/2 - 60) + 'px'; 
+    qtyPopup.style.display = 'flex';
+    qtyOverlay.style.display = 'block'; // 顯示遮罩防止誤觸關閉
+}
+
+function hideQtyPopup() {
+    qtyPopup.style.display = 'none';
+    qtyOverlay.style.display = 'none';
+    currentLongPressName = null;
+}
+
+// 選擇數量
+function setQty(count) {
+    if (!currentLongPressName) return;
+    hand = hand.filter(h => h.name !== currentLongPressName);
+    const spaceLeft = 3 - hand.length;
+    const toAdd = Math.min(count, spaceLeft);
+    for(let i=0; i<toAdd; i++) addToHand(currentLongPressName);
+    
+    renderHand(); 
+    updateLibraryUI(); 
+    checkConfirmButton(); 
+    resetSolution();
+    hideQtyPopup();
 }
 
 function clearSelection() {
@@ -665,17 +767,24 @@ function clearSelection() {
         hand = [];
         renderHand();
         updateLibraryUI();
+        checkConfirmButton();
         resetSolution();
     }
 }
 
-function handleLongPress(name) {
-    const count = hand.filter(h => h.name === name).length;
-    if (count > 0) {
-        if (confirm(`Remove all ${count} of this type?`)) {
-            hand = hand.filter(h => h.name !== name);
-            renderHand(); updateLibraryUI(); resetSolution();
-        }
+function removeFromHand(idx) {
+    hand.splice(idx, 1);
+    renderHand(); 
+    updateLibraryUI(); 
+    checkConfirmButton();
+    resetSolution();
+}
+
+function checkConfirmButton() {
+    if (hand.length === 3) {
+        btnConfirmSelection.style.display = 'inline-block';
+    } else {
+        btnConfirmSelection.style.display = 'none';
     }
 }
 
@@ -695,7 +804,7 @@ function updateLibraryUI() {
     if(selCount) selCount.innerText = hand.length;
 }
 
-// ==================== 盤面控制 (Touch Fix) ====================
+// ==================== 盤面控制 ====================
 function lockBoard(locked) {
     if (locked) boardWrapper.classList.add('locked');
     else boardWrapper.classList.remove('locked');
@@ -720,28 +829,14 @@ function updateCell(r, c) {
 
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
-    
-    // ★★★ 終極觸控修復：如果事件來自觸控，絕對禁止預設行為 ★★★
-    if (e.type === 'touchstart') {
-        e.preventDefault(); 
-    }
-    
-    // 找出座標
-    let target = e.target;
-    // 如果是觸控，要用 elementFromPoint 找目標
-    if (e.type === 'touchstart') {
-        const touch = e.touches[0];
-        target = document.elementFromPoint(touch.clientX, touch.clientY);
-    }
-
-    if (target && target.classList.contains('cell')) {
-        isDragging = true;
-        const r = parseInt(target.dataset.r);
-        const c = parseInt(target.dataset.c);
-        saveState();
-        paintMode = 1 - board[r][c];
-        updateCell(r, c);
-    }
+    if (e.type === 'touchstart' && e.touches.length > 1) return;
+    if (e.cancelable) e.preventDefault();
+    isDragging = true;
+    const r = parseInt(this.dataset.r);
+    const c = parseInt(this.dataset.c);
+    saveState();
+    paintMode = 1 - board[r][c];
+    updateCell(r, c);
 }
 
 function onPointerEnter(e) {
@@ -755,16 +850,10 @@ function onPointerEnter(e) {
 
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
-    
-    // ★★★ 終極觸控修復：絕對禁止預設行為 ★★★
-    if(e.cancelable) e.preventDefault();
-    
     if (!isDragging) return;
-    
+    if (e.cancelable) e.preventDefault();
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    // 增加容錯：如果 target 存在且是格子
     if (target && target.classList.contains('cell')) {
         const r = parseInt(target.dataset.r);
         const c = parseInt(target.dataset.c);
@@ -779,12 +868,12 @@ function clearBoard() {
     hand = []; 
     renderHand();
     updateLibraryUI();
+    checkConfirmButton(); 
     renderBoard(); resetSolution(); lockBoard(false);
-    btnUndo.disabled = true; // 清空後禁止 Undo
+    btnUndo.disabled = true; 
 }
 
 function undoBoard() {
-    // 模式 1: 正在執行解法
     if (solutionSteps.length > 0) {
         if (currentStepIdx > 0) {
             if (boardHistory.length > 0) {
@@ -800,7 +889,6 @@ function undoBoard() {
         return;
     }
 
-    // 模式 2: 純編輯模式
     if (boardHistory.length > 0) {
         const state = boardHistory.pop();
         board = state.board;
@@ -818,11 +906,6 @@ function addToHand(name) {
     renderHand(); resetSolution();
 }
 
-function removeFromHand(idx) {
-    hand.splice(idx, 1);
-    renderHand(); updateLibraryUI(); resetSolution();
-}
-
 // ==================== 算法 ====================
 function resetSolution() {
     solutionSteps = [];
@@ -833,6 +916,8 @@ function resetSolution() {
     btnSolve.innerText = TRANSLATIONS[currentLang].solve;
     btnNext.disabled = true;
     btnNext.innerText = TRANSLATIONS[currentLang].next;
+    btnClear.disabled = false;
+
     clearingCells = []; 
     renderBoard(); 
     document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
@@ -916,6 +1001,7 @@ function runSolver() {
     if (hand.length === 0) { statusEl.innerText = TRANSLATIONS[currentLang].msg_select; return; }
     isCalculating = true;
     btnSolve.disabled = true;
+    btnClear.disabled = true;
     btnSolve.innerText = TRANSLATIONS[currentLang].calculating;
     statusEl.innerText = TRANSLATIONS[currentLang].calculating;
 
@@ -926,6 +1012,7 @@ function runSolver() {
             statusEl.innerText = TRANSLATIONS[currentLang].msg_nosol;
             isCalculating = false;
             btnSolve.disabled = false;
+            btnClear.disabled = false;
             btnSolve.innerText = TRANSLATIONS[currentLang].solve;
         }
     }, 50);
@@ -984,12 +1071,11 @@ function previewStep() {
 
 function applyNextStep() {
     const t = TRANSLATIONS[currentLang];
-    // ★★★ Finish 邏輯修改 ★★★
     if (currentStepIdx >= solutionSteps.length) {
         newlyPlacedCells = []; 
-        hand = []; renderHand(); updateLibraryUI();
-        boardHistory = []; // 清空歷史 (Commit)
-        btnUndo.disabled = true; // 鎖定 Undo
+        hand = []; renderHand(); updateLibraryUI(); checkConfirmButton();
+        boardHistory = []; 
+        btnUndo.disabled = true; 
         resetSolution(); 
         return;
     }
