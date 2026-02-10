@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v5.0</title>
+    <title>Block Blast Solver v7.1</title>
     <style>
         :root {
             --bg-color: #2C3E50;
@@ -12,228 +12,400 @@
             --cell-filled: #7F8C8D;
             --cell-new: #3498DB;
             --cell-preview: #2ECC71;
+            --cell-clearing: #F1C40F;
             --modal-bg: rgba(44, 62, 80, 0.98);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        /* --- 核心修改：鎖死視窗 --- */
-        html, body {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            overflow: hidden; /* 禁止捲動 */
-            position: fixed; /* 鎖定位置 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: white;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            touch-action: none; /* 全域禁止手勢 */
+            margin: 0; padding: 10px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            overscroll-behavior: none; 
+            position: relative;
+            user-select: none; -webkit-user-select: none;
         }
 
-        /* 使用 Flexbox 讓內容垂直排列並自動縮放 */
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            max-width: 600px; /* 電腦版限制寬度 */
-            margin: 0 auto;
-            padding: 10px;
+        body::before {
+            content: "";
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80%; height: auto; aspect-ratio: 3/2;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MDAgNjAwIj48cmVjdCB3aWR0aD0iOTAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iI0ZFMDAwMCIvPjxyZWN0IHdpZHRoPSI0NTAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMDAwMDk1Ii8+PHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0ibTIyNSA2NiA5IDY1IDYxLTIzLTIzIDYxIDY1IDktNjUgOSAyMyA2MS02MS0yMy05IDY1LTktNjUtNjEgMjMgMjMtNjEtNjUtOSA2NS05LTIzLTYxIDYxIDIzem0wIDM3IDUuNiA0MC42IDM4LjEtMTQuMy0xNC4zIDM4LjEgNDAuNiA1LjYtNDAuNiA1LjYgMTQuMyAzOC4xLTM4LjEtMTQuMy01LjYgNDAuNi01LjYtNDAuNi0zOC4xIDE0LjMgMTQuMy0zOC4xLTQwLjYtNS42IDQwLjYtNS42LTE0LjMtMzguMSAzOC4xIDE0LjN6Ii8+PC9zdmc+');
+            background-repeat: no-repeat; background-position: center; background-size: contain;
+            opacity: 0.05; pointer-events: none; z-index: 0;
         }
 
-        /* 標題區 */
         .header {
-            flex: 0 0 auto; /* 固定高度 */
-            display: flex; align-items: center; justify-content: center;
-            position: relative; margin-bottom: 10px;
-            height: 40px;
-        }
-        h1 { margin: 0; font-size: 1.2rem; }
-        .menu-btn {
-            position: absolute; left: 0;
-            background: #3498DB; color: white; border: none;
-            padding: 8px 12px; border-radius: 6px; font-size: 1rem;
+            width: 100%; max-width: 500px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; z-index: 2; height: 40px; position: relative;
         }
 
-        /* 棋盤區 (自動伸縮) */
-        .board-section {
-            flex: 1; /* 佔據剩餘空間 */
-            display: flex; justify-content: center; align-items: center;
-            min-height: 0; /* 允許縮小 */
-            margin-bottom: 10px;
+        h1 { 
+            position: absolute; left: 50%; transform: translateX(-50%);
+            margin: 0; font-size: 1.2rem; white-space: nowrap; 
+        }
+
+        .header-btn {
+            background: transparent; border: none;
+            color: white; font-size: 1.6rem;
+            cursor: pointer; padding: 5px;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        
+        .lang-select {
+            position: absolute; top: 45px; right: 40px;
+            background: #34495E; border-radius: 8px;
+            padding: 5px; display: none; flex-direction: column;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 200;
+            min-width: 120px;
+        }
+        .lang-select.show { display: flex; }
+        .lang-opt {
+            padding: 10px; color: white; background: none; border: none;
+            text-align: left; font-size: 1rem; cursor: pointer;
+        }
+        .lang-opt:hover { background: #2C3E50; }
+
+        .container {
+            display: flex; flex-direction: column; width: 100%; max-width: 500px;
+            align-items: center; gap: 15px; z-index: 1;
         }
 
         .board-wrapper {
+            width: 95vw; max-width: 500px;
             background-color: var(--board-bg);
             border-radius: 8px; padding: 5px;
-            /* 關鍵：保持正方形，但不要超過寬度或高度的限制 */
-            width: min(90vw, 45vh); 
-            height: min(90vw, 45vh);
-            display: grid;
-            grid-template-columns: repeat(8, 1fr); 
-            grid-template-rows: repeat(8, 1fr);
-            gap: 2px;
+            aspect-ratio: 1 / 1;
+            display: flex; justify-content: center; align-items: center;
             position: relative;
         }
-        
-        /* 鎖定遮罩 */
+
         .board-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10; display: none; 
         }
         .board-wrapper.locked .board-overlay { display: block; }
 
+        .board-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr); 
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px; width: 100%; height: 100%;
+            touch-action: none; 
+        }
+
         .cell {
             background-color: var(--cell-empty);
             border-radius: 2px;
             display: flex; justify-content: center; align-items: center;
-            font-weight: bold; font-size: 0.8rem; color: white;
+            font-weight: bold; font-size: 1rem; color: white;
             user-select: none;
         }
+
         .cell.filled { background-color: var(--cell-filled); }
         .cell.new { background-color: var(--cell-new) !important; }
-        .cell.preview { background-color: var(--cell-preview) !important; color: #000; box-shadow: inset 0 0 0 2px #fff; }
+        .cell.preview { background-color: var(--cell-preview) !important; color: #000; box-shadow: inset 0 0 0 2px #fff; } 
+        .cell.clearing { background-color: var(--cell-clearing) !important; animation: pulse 0.5s infinite alternate; }
 
-        /* 控制區 */
-        .controls-section {
-            flex: 0 0 auto; /* 固定高度 */
-            display: flex; flex-direction: column; gap: 8px;
-            padding-bottom: 10px; /* 預留底部安全區 */
-        }
+        @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
 
-        .btn-row {
+        .controls {
+            width: 95vw; max-width: 500px;
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
         }
 
         button {
             border: none; padding: 12px; border-radius: 6px;
             font-size: 1rem; cursor: pointer; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.2s;
         }
         button:active { transform: scale(0.96); }
+        button:disabled { background-color: #555 !important; color: #aaa !important; cursor: not-allowed; box-shadow: none; }
+
         .btn-undo { background-color: #95A5A6; color: white; }
         .btn-clear { background-color: #E74C3C; color: white; }
-        .btn-solve { background-color: #27AE60; color: white; width: 100%; font-size: 1.1rem; }
-        .btn-next { background-color: #F39C12; color: white; width: 100%; }
-        .btn-next:disabled { background-color: #555; opacity: 0.5; }
-
-        .status-msg {
-            text-align: center; height: 20px; font-size: 0.9rem;
-            color: #F1C40F; font-weight: bold; overflow: hidden;
+        .btn-solve { background-color: #27AE60; color: white; width: 100%; margin: 10px 0; font-size: 1.2rem; padding: 15px; }
+        .btn-next { background-color: #F39C12; color: white; width: 100%; padding: 15px;}
+        
+        .right-panel {
+            width: 95vw; max-width: 500px;
+            display: flex; flex-direction: column;
         }
 
-        /* 手牌區 */
+        .panel-label { margin-bottom: 5px; font-size: 0.9rem; color: #BDC3C7; text-align: center;}
+
         .hand-area {
             background-color: var(--board-bg);
-            height: 70px; border-radius: 8px;
-            padding: 5px; display: flex; gap: 10px;
+            height: 90px; border-radius: 8px;
+            padding: 5px 10px; display: flex; gap: 10px;
             align-items: center; justify-content: center;
+            margin-bottom: 10px;
         }
+
         .hand-piece {
             position: relative;
             background: rgba(0,0,0,0.2);
-            padding: 2px; border-radius: 4px;
+            padding: 4px; border-radius: 4px;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
         }
         .hand-piece .remove-btn {
-            position: absolute; top: -6px; right: -6px;
+            position: absolute; top: -8px; right: -8px;
             background: #E74C3C; color: white; border-radius: 50%;
-            width: 18px; height: 18px; font-size: 12px;
-            line-height: 18px; text-align: center; font-weight: bold;
-            border: 2px solid var(--board-bg);
+            width: 22px; height: 22px; font-size: 14px;
+            line-height: 22px; text-align: center; font-weight: bold;
+            border: 2px solid var(--board-bg); cursor: pointer;
         }
-        .hand-piece canvas { max-height: 50px; }
 
-        /* 方塊庫選單 (唯一可以捲動的地方) */
-        .library-modal {
+        .status-msg {
+            text-align: center; margin: 5px 0; min-height: 24px;
+            color: #F1C40F; font-weight: bold;
+        }
+
+        /* Modal */
+        .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--modal-bg); z-index: 100;
             display: flex; flex-direction: column; align-items: center;
             padding: 20px;
-            visibility: hidden; opacity: 0; transition: opacity 0.2s;
+            backdrop-filter: blur(5px); transition: opacity 0.3s;
+            visibility: hidden; opacity: 0;
         }
-        .library-modal.show { visibility: visible; opacity: 1; }
+        .modal.show { visibility: visible; opacity: 1; }
 
         .modal-header {
             width: 100%; max-width: 600px;
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; flex: 0 0 auto;
+            margin-bottom: 10px; flex-shrink: 0;
         }
-        .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; }
+        /* 增加右上角按鈕群組 (清除 + 關閉) */
+        .modal-controls { display: flex; gap: 15px; align-items: center; }
+        
+        .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; border: none; cursor: pointer; line-height: 1; }
+        /* 新增的選單內清除按鈕 */
+        .clear-sel-btn { background: transparent; font-size: 1.5rem; color: #E74C3C; padding: 0; border: none; cursor: pointer; line-height: 1; }
+
+        .category-title {
+            width: 100%; max-width: 600px;
+            color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555;
+        }
 
         .library-content {
             flex: 1; width: 100%; max-width: 600px;
-            overflow-y: auto; /* 允許內部捲動 */
+            overflow-y: auto; padding-bottom: 50px;
             -webkit-overflow-scrolling: touch; 
-            padding-bottom: 40px;
         }
 
-        .category-title {
-            color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555;
-        }
         .lib-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)); gap: 12px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 15px;
         }
+
         .lib-piece {
-            aspect-ratio: 1; background-color: rgba(255,255,255,0.1);
-            border-radius: 8px; display: flex; justify-content: center; align-items: center;
+            aspect-ratio: 1;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; position: relative;
+            transition: transform 0.1s;
         }
-        .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
+        .lib-piece:active { transform: scale(0.95); }
+        
         .lib-piece .count-badge {
             position: absolute; top: -5px; right: -5px;
-            background: #2ECC71; color: white; border-radius: 50%; width: 18px; height: 18px;
-            font-size: 10px; line-height: 18px; text-align: center; display: none;
+            background: #2ECC71; color: white;
+            border-radius: 50%; width: 20px; height: 20px;
+            font-size: 12px; line-height: 20px; text-align: center;
+            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
+        .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
         .lib-piece.selected .count-badge { display: block; }
-        .lib-piece canvas { max-width: 80%; max-height: 80%; }
+        .lib-piece canvas { max-width: 85%; max-height: 85%; }
+
+        .help-content {
+            flex: 1; width: 100%; max-width: 600px;
+            overflow-y: auto; color: #ddd; font-size: 0.95rem; line-height: 1.6;
+        }
+        .help-content h3 { color: #3498DB; margin-top: 0; }
+        .help-content ul { padding-left: 20px; }
+        .help-content li { margin-bottom: 5px; }
+        .help-footer {
+            margin-top: 20px; padding-top: 15px; border-top: 1px solid #555; text-align: center;
+        }
+        .help-footer a { color: #2ECC71; text-decoration: none; font-weight: bold; }
 
     </style>
 </head>
 <body>
 
-<div class="app-container">
     <div class="header">
-        <button class="menu-btn" onclick="openLibrary()">☰ 方塊庫</button>
-        <h1>Block Blast Solver v5.0</h1>
+        <button class="header-btn" onclick="openLibrary()" style="font-size: 1.8rem;">▦</button>
+        <h1>Block Blast Solver</h1>
+        <div style="display:flex; gap:15px;">
+            <button class="header-btn" onclick="toggleLangMenu()">🌐</button>
+            <button class="header-btn" onclick="openHelp()">❔</button>
+        </div>
     </div>
 
-    <div class="board-section">
+    <div id="langMenu" class="lang-select">
+        <button class="lang-opt" onclick="setLang('zh')">繁體中文</button>
+        <button class="lang-opt" onclick="setLang('en')">English</button>
+        <button class="lang-opt" onclick="setLang('jp')">日本語</button>
+        <button class="lang-opt" onclick="setLang('kr')">한국어</button>
+    </div>
+
+    <div class="container">
         <div id="boardWrapper" class="board-wrapper">
             <div class="board-overlay"></div>
-            </div>
-    </div>
-
-    <div class="controls-section">
-        <div class="btn-row">
-            <button class="btn-undo" onclick="undoBoard()">↺ 上一步</button>
-            <button class="btn-clear" onclick="clearBoard()">🗑 清空</button>
+            <div id="board" class="board-container"></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn-undo" onclick="undoBoard()" data-key="undo">↺ 上一步</button>
+            <button class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
         </div>
 
-        <div id="status" class="status-msg"></div>
-
-        <button class="btn-solve" onclick="runSolver()">✨ 計算最佳解 ✨</button>
-        <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled>執行這一步 ▶</button>
-        
-        <div style="text-align: center; font-size: 0.8rem; color: #aaa;">本輪方塊</div>
-        <div id="hand" class="hand-area"><span style="color: #777;">(空)</span></div>
+        <div class="right-panel">
+            <div id="status" class="status-msg"></div>
+            <button id="btnSolve" class="btn-solve" onclick="runSolver()" data-key="solve">✨ 計算最佳解 ✨</button>
+            <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled data-key="next">執行這一步 ▶</button>
+            <div class="panel-label" style="margin-top: 10px;" data-key="handLabel">本輪方塊</div>
+            <div id="hand" class="hand-area"><span style="color: #777;" data-key="empty">(空)</span></div>
+        </div>
     </div>
-</div>
 
-<div id="libModal" class="library-modal">
-    <div class="modal-header">
-        <h2 style="margin:0">選擇方塊 (<span id="selCount">0</span>/3)</h2>
-        <button class="close-btn" onclick="closeLibrary()">×</button>
+    <div id="libModal" class="modal">
+        <div class="modal-header">
+            <h2 style="margin:0">
+                <span data-key="selectTitle">選擇方塊</span> 
+                <span style="font-size:0.9em; margin-left:5px;">(<span id="selCount">0</span>/3)</span>
+            </h2>
+            <div class="modal-controls">
+                <button class="clear-sel-btn" onclick="clearSelection()">🗑</button>
+                <button class="close-btn" onclick="closeModal('libModal')">×</button>
+            </div>
+        </div>
+        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;" data-key="selectHint">點擊累加，長按取消</div>
+        <div id="libContent" class="library-content"></div>
     </div>
-    <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;">點擊累加，長按取消</div>
-    <div id="libContent" class="library-content"></div>
-</div>
+
+    <div id="helpModal" class="modal">
+        <div class="modal-header">
+            <h2 style="margin:0" data-key="helpTitle">使用指南</h2>
+            <button class="close-btn" onclick="closeModal('helpModal')">×</button>
+        </div>
+        <div class="help-content">
+            <div id="helpText"></div> 
+            <div class="help-footer">
+                <p data-key="contact">還有問題嗎？</p>
+                <a href="mailto:jerry1221yen@gmail.com">📩 jerry1221yen@gmail.com</a>
+            </div>
+        </div>
+    </div>
 
 <script>
-// ==================== 禁止全域捲動 (iOS 關鍵) ====================
-document.body.addEventListener('touchmove', function(e) {
-    // 如果觸控的目標不是在 "library-content" (選單) 裡面，就禁止捲動
-    if (!e.target.closest('.library-content')) {
-        e.preventDefault();
+// ==================== 多語言設定 ====================
+const TRANSLATIONS = {
+    zh: {
+        title: "Block Blast Solver",
+        undo: "↺ 上一步",
+        clear: "🗑 清空",
+        solve: "✨ 計算最佳解 ✨",
+        calculating: "計算中...",
+        next: "執行這一步 ▶",
+        finish: "完成 (點擊確認)",
+        handLabel: "本輪方塊",
+        empty: "(空)",
+        selectTitle: "選擇方塊",
+        selectHint: "點擊累加，長按取消",
+        helpTitle: "使用指南",
+        contact: "還有問題嗎？寄信給我：",
+        categories: ["基本 (點、斜、線)", "方塊 & T型 & Z型", "小 L (3格)", "中 L (4格)", "大 L (5格)"],
+        msg_select: "請先選擇方塊！",
+        msg_nosol: "❌ 無解！(Game Over)",
+        msg_done: "🎉 完成！請重新選方塊",
+        msg_step: "步驟",
+        msg_clear: "消",
+        msg_row: "行",
+        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li>點擊加入手牌，可重複選擇。</li><li>選單右上角 🗑 可一鍵清空選擇。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li></ul>`
+    },
+    en: {
+        title: "Block Blast Solver",
+        undo: "↺ Undo",
+        clear: "🗑 Clear",
+        solve: "✨ Solve ✨",
+        calculating: "Calculating...",
+        next: "Next Step ▶",
+        finish: "Finish (Click to Fix)",
+        handLabel: "Current Pieces",
+        empty: "(Empty)",
+        selectTitle: "Select Pieces",
+        selectHint: "Tap to add, Long press to remove",
+        helpTitle: "User Guide",
+        contact: "Questions? Email me:",
+        categories: ["Basic (Dot, Diag, Line)", "Square & T & Z", "Small L (3)", "Medium L (4)", "Large L (5)"],
+        msg_select: "Please select pieces first!",
+        msg_nosol: "❌ No Solution!",
+        msg_done: "🎉 Done! Pick new pieces.",
+        msg_step: "Step",
+        msg_clear: "Clear",
+        msg_row: "lines",
+        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li>Tap to add. Top-right 🗑 clears selection.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li></ul>`
+    },
+    jp: {
+        title: "ブロックパズル解法ツール",
+        undo: "↺ 元に戻す",
+        clear: "🗑 クリア",
+        solve: "✨ 計算する ✨",
+        calculating: "計算中...",
+        next: "次のステップ ▶",
+        finish: "完了 (確定する)",
+        handLabel: "手持ちのブロック",
+        empty: "(空)",
+        selectTitle: "ブロック選択",
+        selectHint: "タップで追加、長押しで削除",
+        helpTitle: "使い方",
+        contact: "質問がありますか？メール：",
+        categories: ["基本 (点, 斜め, 線)", "四角 & T型 & Z型", "小 L (3)", "中 L (4)", "大 L (5)"],
+        msg_select: "先にブロックを選んでください！",
+        msg_nosol: "❌ 解なし！",
+        msg_done: "🎉 完了！次へ",
+        msg_step: "手順",
+        msg_clear: "消去",
+        msg_row: "行",
+        helpBody: `<h3>1. 盤面設定</h3><ul><li>盤面をスワイプしてブロックを描画/消去します。</li></ul><h3>2. ブロック選択</h3><ul><li>▦ ボタンでメニューを開きます。</li><li>右上の 🗑 で選択をクリアできます。</li></ul><h3>3. 実行</h3><ul><li>「計算する」をタップ。</li><li>緑色は配置場所、金色は消える行です。</li></ul>`
+    },
+    kr: {
+        title: "블록 블라스트 솔버",
+        undo: "↺ 실행 취소",
+        clear: "🗑 지우기",
+        solve: "✨ 해결하기 ✨",
+        calculating: "계산 중...",
+        next: "다음 단계 ▶",
+        finish: "완료 (확정)",
+        handLabel: "현재 블록",
+        empty: "(비어 있음)",
+        selectTitle: "블록 선택",
+        selectHint: "탭하여 추가, 길게 눌러 삭제",
+        helpTitle: "사용 가이드",
+        contact: "문의 사항:",
+        categories: ["기본 (점, 대각선, 선)", "사각형 & T자 & Z자", "소형 L (3)", "중형 L (4)", "대형 L (5)"],
+        msg_select: "블록을 먼저 선택하세요!",
+        msg_nosol: "❌ 해결 불가!",
+        msg_done: "🎉 완료!",
+        msg_step: "단계",
+        msg_clear: "제거",
+        msg_row: "줄",
+        helpBody: `<h3>1. 보드 설정</h3><ul><li>보드를 드래그하여 블록을 그립니다.</li></ul><h3>2. 블록 선택</h3><ul><li>▦ 버튼을 눌러 메뉴를 엽니다.</li><li>오른쪽 상단 🗑 버튼으로 선택을 지웁니다.</li></ul><h3>3. 실행</h3><ul><li>"해결하기"를 누릅니다.</li><li>녹색은 배치 위치, 금색은 제거되는 줄입니다.</li></ul>`
     }
-}, { passive: false });
+};
+
+let currentLang = 'zh';
 
 // ==================== 資料與設定 ====================
 const SHAPES = {
@@ -256,11 +428,11 @@ const SHAPES = {
 };
 
 const CATEGORIES = [
-    { title: "基本 (點、斜、線)", list: ['1', 'd2', 'd2_r', 'd3', 'd3_r', '2h', '3h', '4h', '5h', '2v', '3v', '4v', '5v'] },
-    { title: "方塊 & T型 & Z型", list: ['2x2', '2x3', '3x2', '3x3', 'T3', 'T3_r', 'T3_m', 'T3_mr', 'z3', 'z3_r', 'z3v', 'z3v_r'] },
-    { title: "小 L (3格)", list: ['L2', 'L2_r', 'L2_m', 'L2_mr'] },
-    { title: "中 L (4格)", list: ['L3_2', 'J3_2', 'L3_2_inv', 'J3_2_inv', 'L3_2_r', 'J3_2_r', 'L3_2_r_inv', 'J3_2_r_inv'] },
-    { title: "大 L (5格)", list: ['L3', 'L3_r', 'L3_m', 'L3_mr', 'J3', 'J3_r'] }
+    { key: 0, list: ['1', 'd2', 'd2_r', 'd3', 'd3_r', '2h', '3h', '4h', '5h', '2v', '3v', '4v', '5v'] },
+    { key: 1, list: ['2x2', '2x3', '3x2', '3x3', 'T3', 'T3_r', 'T3_m', 'T3_mr', 'z3', 'z3_r', 'z3v', 'z3v_r'] },
+    { key: 2, list: ['L2', 'L2_r', 'L2_m', 'L2_mr'] },
+    { key: 3, list: ['L3_2', 'J3_2', 'L3_2_inv', 'J3_2_inv', 'L3_2_r', 'J3_2_r', 'L3_2_r_inv', 'J3_2_r_inv'] },
+    { key: 4, list: ['L3', 'L3_r', 'L3_m', 'L3_mr', 'J3', 'J3_r'] }
 ];
 
 function getColor(name) {
@@ -276,61 +448,98 @@ function getColor(name) {
     return '#95A5A6';
 }
 
-// ==================== 程式邏輯 ====================
+// ==================== 狀態 ====================
 let board = Array(8).fill().map(() => Array(8).fill(0));
 let newlyPlacedCells = []; 
+let clearingCells = [];    
 let boardHistory = [];
 let hand = [];
 let solutionSteps = [];
 let currentStepIdx = 0;
 let isDragging = false;
 let paintMode = 1; 
+let isCalculating = false; 
 
 const boardWrapper = document.getElementById('boardWrapper');
+const boardEl = document.getElementById('board');
 const handEl = document.getElementById('hand');
 const libContentEl = document.getElementById('libContent');
-const modalEl = document.getElementById('libModal');
 const selCountEl = document.getElementById('selCount');
 const statusEl = document.getElementById('status');
 const btnNext = document.getElementById('btnNext');
+const btnSolve = document.getElementById('btnSolve');
+const langMenu = document.getElementById('langMenu');
+const helpText = document.getElementById('helpText');
 
 function init() {
     renderBoard();
     renderLibraryMenu(); 
-    // 全域滑鼠釋放
+    updateLanguage(); 
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('touchend', () => isDragging = false);
+    document.body.addEventListener('touchmove', function(e) {
+        if (!e.target.closest('.library-content') && !e.target.closest('.help-content')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
 }
 
-// ==================== 繪圖邏輯 ====================
-function renderBoard() {
-    boardWrapper.innerHTML = '<div class="board-overlay"></div>'; // 重置
+// ==================== 語言 ====================
+function toggleLangMenu() { langMenu.classList.toggle('show'); }
+function setLang(lang) {
+    currentLang = lang;
+    updateLanguage();
+    langMenu.classList.remove('show');
+}
+
+function updateLanguage() {
+    const t = TRANSLATIONS[currentLang];
+    document.querySelector('h1').innerText = t.title;
+    document.querySelector('[data-key="undo"]').innerText = t.undo;
+    document.querySelector('[data-key="clear"]').innerText = t.clear;
+    document.querySelector('[data-key="solve"]').innerText = isCalculating ? t.calculating : t.solve;
     
-    // JS動態產生 grid
+    if (btnNext.disabled && currentStepIdx >= solutionSteps.length && solutionSteps.length > 0) {
+        btnNext.innerText = t.finish;
+    } else {
+        btnNext.innerText = t.next;
+    }
+
+    document.querySelector('[data-key="handLabel"]').innerText = t.handLabel;
+    document.querySelector('[data-key="empty"]').innerText = t.empty;
+    document.querySelector('[data-key="selectTitle"]').innerText = t.selectTitle;
+    document.querySelector('[data-key="selectHint"]').innerText = t.selectHint;
+    document.querySelector('[data-key="helpTitle"]').innerText = t.helpTitle;
+    document.querySelector('[data-key="contact"]').innerText = t.contact;
+    
+    const titles = document.querySelectorAll('.category-title');
+    titles.forEach((el, idx) => { el.innerText = t.categories[idx]; });
+    helpText.innerHTML = t.helpBody;
+}
+
+// ==================== 渲染 ====================
+function renderBoard() {
+    boardEl.innerHTML = '';
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
-            
             if (board[r][c] === 1) {
                 const isNew = newlyPlacedCells.some(p => p.r === r && p.c === c);
                 if (isNew) cell.classList.add('new'); 
                 else cell.classList.add('filled'); 
             }
-            
-            cell.dataset.r = r;
-            cell.dataset.c = c;
-            
-            // 綁定事件
+            if (clearingCells.some(p => p.r === r && p.c === c)) {
+                cell.classList.add('clearing');
+            }
+            cell.dataset.r = r; cell.dataset.c = c;
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
             cell.addEventListener('touchstart', onPointerDown, {passive: false});
-            
-            boardWrapper.appendChild(cell);
+            boardEl.appendChild(cell);
         }
     }
-    // 綁定 touchmove 到 wrapper
-    boardWrapper.addEventListener('touchmove', onTouchMove, {passive: false});
+    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
 }
 
 function renderLibraryMenu() {
@@ -338,23 +547,18 @@ function renderLibraryMenu() {
     CATEGORIES.forEach(cat => {
         const title = document.createElement('div');
         title.className = 'category-title';
-        title.innerText = cat.title;
         libContentEl.appendChild(title);
-
         const grid = document.createElement('div');
         grid.className = 'lib-grid';
-        
         cat.list.forEach(name => {
             if (!SHAPES[name]) return;
             const div = document.createElement('div');
             div.className = 'lib-piece';
             div.dataset.name = name; 
             setupLibraryItemEvents(div, name);
-            
             const badge = document.createElement('div');
             badge.className = 'count-badge';
             div.appendChild(badge);
-
             const canvas = drawShapeCanvas(SHAPES[name], 6, getColor(name));
             div.appendChild(canvas);
             grid.appendChild(div);
@@ -364,31 +568,20 @@ function renderLibraryMenu() {
 }
 
 function setupLibraryItemEvents(element, name) {
-    let pressTimer;
-    let isLongPress = false;
-
+    let pressTimer; let isLongPress = false;
     const startPress = (e) => {
-        // 多點不處理
         if (e.type === 'touchstart' && e.touches.length > 1) return;
-        
         isLongPress = false;
-        pressTimer = setTimeout(() => {
-            isLongPress = true;
-            handleLongPress(name);
-        }, 500);
+        pressTimer = setTimeout(() => { isLongPress = true; handleLongPress(name); }, 500);
     };
-
     const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
-
     const endPress = (e) => {
         if (pressTimer) clearTimeout(pressTimer);
         if (!isLongPress) {
-            // 如果不是長按，視為點擊
             if (e.type === 'touchend') e.preventDefault();
             addInstanceToHand(name);
         }
     };
-
     element.addEventListener('mousedown', startPress);
     element.addEventListener('mouseleave', cancelPress);
     element.addEventListener('mouseup', endPress);
@@ -400,11 +593,9 @@ function setupLibraryItemEvents(element, name) {
 function renderHand() {
     handEl.innerHTML = '';
     if (hand.length === 0) {
-        handEl.innerHTML = '<span style="color: #777;">(空)</span>';
-        selCountEl.innerText = 0;
+        handEl.innerHTML = `<span style="color: #777;" data-key="empty">${TRANSLATIONS[currentLang].empty}</span>`;
         return;
     }
-    selCountEl.innerText = hand.length;
     hand.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'hand-piece';
@@ -421,10 +612,8 @@ function renderHand() {
 
 function drawShapeCanvas(shape, cellSize, color) {
     const canvas = document.createElement('canvas');
-    const rows = shape.length;
-    const cols = shape[0].length;
-    canvas.width = cols * cellSize;
-    canvas.height = rows * cellSize;
+    const rows = shape.length; const cols = shape[0].length;
+    canvas.width = cols * cellSize; canvas.height = rows * cellSize;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = color;
     for(let r=0; r<rows; r++) {
@@ -435,22 +624,32 @@ function drawShapeCanvas(shape, cellSize, color) {
     return canvas;
 }
 
-// ==================== 互動邏輯 ====================
-function openLibrary() { updateLibraryUI(); modalEl.classList.add('show'); }
-function closeLibrary() { modalEl.classList.remove('show'); }
+// ==================== 互動 ====================
+function openLibrary() { updateLibraryUI(); document.getElementById('libModal').classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function openHelp() { document.getElementById('helpModal').classList.add('show'); }
 
 function addInstanceToHand(name) {
     if (hand.length < 3) {
-        addToHand(name);
+        addToHand(name); updateLibraryUI();
+        if (hand.length === 3) setTimeout(() => closeModal('libModal'), 200);
+    }
+}
+
+// 新增：清除手牌 (Menu)
+function clearSelection() {
+    if(hand.length > 0) {
+        hand = [];
+        renderHand();
         updateLibraryUI();
-        if (hand.length === 3) setTimeout(closeLibrary, 200);
+        resetSolution();
     }
 }
 
 function handleLongPress(name) {
     const count = hand.filter(h => h.name === name).length;
     if (count > 0) {
-        if (confirm(`確定要清除已選的 ${count} 個此方塊嗎？`)) {
+        if (confirm(`Remove all ${count} of this type?`)) {
             hand = hand.filter(h => h.name !== name);
             renderHand(); updateLibraryUI(); resetSolution();
         }
@@ -464,18 +663,17 @@ function updateLibraryUI() {
         const count = hand.filter(h => h.name === name).length;
         const badge = div.querySelector('.count-badge');
         if (count > 0) {
-            div.classList.add('selected');
-            badge.innerText = 'x' + count;
-            badge.style.display = 'block';
+            div.classList.add('selected'); badge.innerText = 'x' + count; badge.style.display = 'block';
         } else {
-            div.classList.remove('selected');
-            badge.style.display = 'none';
+            div.classList.remove('selected'); badge.style.display = 'none';
         }
     });
-    selCountEl.innerText = hand.length;
+    // 更新數字
+    const selCount = document.getElementById('selCount');
+    if(selCount) selCount.innerText = hand.length;
 }
 
-// ==================== 盤面滑動 (Lockdown) ====================
+// ==================== 盤面控制 ====================
 function lockBoard(locked) {
     if (locked) boardWrapper.classList.add('locked');
     else boardWrapper.classList.remove('locked');
@@ -500,12 +698,10 @@ function updateCell(r, c) {
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
     if (e.type === 'touchstart' && e.touches.length > 1) return;
-    if (e.cancelable) e.preventDefault(); // 禁止瀏覽器處理
-
+    if (e.cancelable) e.preventDefault();
     isDragging = true;
     const r = parseInt(this.dataset.r);
     const c = parseInt(this.dataset.c);
-    
     saveState();
     paintMode = 1 - board[r][c];
     updateCell(r, c);
@@ -523,8 +719,7 @@ function onPointerEnter(e) {
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
     if (!isDragging) return;
-    if (e.cancelable) e.preventDefault(); // 這裡再次確保不捲動
-    
+    if (e.cancelable) e.preventDefault();
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
     if (target && target.classList.contains('cell')) {
@@ -534,10 +729,14 @@ function onTouchMove(e) {
     }
 }
 
+// 修改：清空時一併清空手牌
 function clearBoard() {
     saveState();
     board = Array(8).fill().map(() => Array(8).fill(0));
-    newlyPlacedCells = [];
+    newlyPlacedCells = []; clearingCells = [];
+    hand = []; // 清空手牌
+    renderHand();
+    updateLibraryUI();
     renderBoard(); resetSolution(); lockBoard(false); 
 }
 
@@ -546,6 +745,7 @@ function undoBoard() {
         const state = boardHistory.pop();
         board = state.board;
         newlyPlacedCells = state.newlyPlaced || [];
+        clearingCells = [];
         renderBoard(); resetSolution(); lockBoard(false); 
     }
 }
@@ -566,10 +766,14 @@ function resetSolution() {
     solutionSteps = [];
     currentStepIdx = 0;
     statusEl.innerText = '';
+    isCalculating = false;
+    btnSolve.disabled = false;
+    btnSolve.innerText = TRANSLATIONS[currentLang].solve;
     btnNext.disabled = true;
-    btnNext.innerText = "執行這一步 ▶";
-    const previews = document.querySelectorAll('.cell.preview');
-    previews.forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
+    btnNext.innerText = TRANSLATIONS[currentLang].next;
+    clearingCells = []; 
+    renderBoard(); 
+    document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
     lockBoard(false); 
 }
 
@@ -637,29 +841,63 @@ function solve(currentBoard, pieces) {
 }
 
 function runSolver() {
-    if (hand.length === 0) { statusEl.innerText = "請先選擇方塊！"; return; }
-    statusEl.innerText = "計算中...";
+    if (hand.length === 0) { statusEl.innerText = TRANSLATIONS[currentLang].msg_select; return; }
+    isCalculating = true;
+    btnSolve.disabled = true;
+    btnSolve.innerText = TRANSLATIONS[currentLang].calculating;
+    statusEl.innerText = TRANSLATIONS[currentLang].calculating;
+
     setTimeout(() => {
         const sol = solve(board, hand);
-        if (sol) { solutionSteps = sol; currentStepIdx = 0; previewStep(); }
-        else { statusEl.innerText = "❌ 無解！"; }
+        if (sol) { solutionSteps = sol; currentStepIdx = 0; previewStep(); } 
+        else { 
+            statusEl.innerText = TRANSLATIONS[currentLang].msg_nosol;
+            isCalculating = false;
+            btnSolve.disabled = false;
+            btnSolve.innerText = TRANSLATIONS[currentLang].solve;
+        }
     }, 50);
 }
 
-function previewStep() {
-    if (currentStepIdx >= solutionSteps.length) {
-        statusEl.innerText = "🎉 完成！"; statusEl.style.color = "#2ECC71";
-        btnNext.disabled = true; btnNext.innerText = "完成";
-        hand = []; renderHand(); newlyPlacedCells = []; renderBoard();
-        document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
-        lockBoard(false); return;
+function getClearingCells(tempBoard, step) {
+    let toClear = [];
+    let b = tempBoard.map(row => [...row]);
+    for(let i=0; i<step.shape.length; i++) {
+        for(let j=0; j<step.shape[0].length; j++) {
+            if (step.shape[i][j]) b[step.r + i][step.c + j] = 1;
+        }
     }
+    let rows = [], cols = [];
+    for(let i=0; i<8; i++) if(b[i].every(v=>v===1)) rows.push(i);
+    for(let j=0; j<8; j++) if(b.every(r=>r[j]===1)) cols.push(j);
+    for(let r of rows) for(let c=0; c<8; c++) toClear.push({r,c});
+    for(let c of cols) for(let r=0; r<8; r++) toClear.push({r,c});
+    return toClear;
+}
+
+function previewStep() {
+    const t = TRANSLATIONS[currentLang];
+    if (currentStepIdx >= solutionSteps.length) {
+        statusEl.innerText = t.msg_done;
+        statusEl.style.color = "#2ECC71";
+        btnNext.disabled = false;
+        btnNext.innerText = t.finish; 
+        clearingCells = [];
+        renderBoard(); 
+        document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
+        return;
+    }
+
     lockBoard(true);
     const step = solutionSteps[currentStepIdx];
-    statusEl.innerText = `步驟 ${currentStepIdx + 1}: 消 ${step.cleared} 行`;
+    statusEl.innerText = `${t.msg_step} ${currentStepIdx + 1}: ${t.msg_clear} ${step.cleared} ${t.msg_row}`;
     statusEl.style.color = "#F1C40F";
-    btnNext.disabled = false; btnNext.innerText = "執行這一步 ▶";
-    document.querySelectorAll('.cell').forEach(c => { c.classList.remove('preview'); c.innerText = ''; });
+    btnNext.disabled = false;
+    btnNext.innerText = t.next;
+
+    clearingCells = getClearingCells(board, step);
+    renderBoard();
+
     const shape = step.shape;
     const cells = document.querySelectorAll('.cell');
     for(let i=0; i<shape.length; i++) {
@@ -673,9 +911,17 @@ function previewStep() {
 }
 
 function applyNextStep() {
-    if (currentStepIdx >= solutionSteps.length) return;
+    const t = TRANSLATIONS[currentLang];
+    if (currentStepIdx >= solutionSteps.length) {
+        newlyPlacedCells = []; 
+        hand = []; renderHand(); updateLibraryUI();
+        resetSolution(); 
+        return;
+    }
+
     const step = solutionSteps[currentStepIdx];
     saveState();
+
     for(let i=0; i<step.shape.length; i++) {
         for(let j=0; j<step.shape[0].length; j++) {
             if (step.shape[i][j]) {
@@ -684,14 +930,23 @@ function applyNextStep() {
             }
         }
     }
+    
     let clearR = [], clearC = [];
     for(let i=0; i<8; i++) if(board[i].every(v=>v===1)) clearR.push(i);
     for(let j=0; j<8; j++) if(board.every(row=>row[j]===1)) clearC.push(j);
+    
     if (clearR.length > 0 || clearC.length > 0) {
-        for(let row of clearR) for(let j=0; j<8; j++) { board[row][j] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j)); }
-        for(let col of clearC) for(let i=0; i<8; i++) { board[i][col] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col)); }
+        for(let row of clearR) for(let j=0; j<8; j++) { 
+            board[row][j] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j)); 
+        }
+        for(let col of clearC) for(let i=0; i<8; i++) { 
+            board[i][col] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col)); 
+        }
     }
-    renderBoard(); currentStepIdx++; previewStep();
+    
+    renderBoard();
+    currentStepIdx++;
+    previewStep();
 }
 
 init();
