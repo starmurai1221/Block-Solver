@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v4.4</title>
+    <title>Block Blast Solver v5.0</title>
     <style>
         :root {
             --bg-color: #2C3E50;
@@ -17,228 +17,224 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        /* --- 核心修改：鎖死視窗 --- */
+        html, body {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden; /* 禁止捲動 */
+            position: fixed; /* 鎖定位置 */
             background-color: var(--bg-color);
             color: white;
-            margin: 0; padding: 10px;
-            display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh;
-            /* 防止下拉重整干擾操作 */
-            overscroll-behavior: none; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            touch-action: none; /* 全域禁止手勢 */
         }
 
+        /* 使用 Flexbox 讓內容垂直排列並自動縮放 */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            max-width: 600px; /* 電腦版限制寬度 */
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        /* 標題區 */
         .header {
-            width: 100%; max-width: 500px;
+            flex: 0 0 auto; /* 固定高度 */
             display: flex; align-items: center; justify-content: center;
-            position: relative; margin-bottom: 15px;
+            position: relative; margin-bottom: 10px;
+            height: 40px;
         }
-
         h1 { margin: 0; font-size: 1.2rem; }
-
         .menu-btn {
             position: absolute; left: 0;
             background: #3498DB; color: white; border: none;
             padding: 8px 12px; border-radius: 6px; font-size: 1rem;
-            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        .container {
-            display: flex; flex-direction: column; width: 100%; max-width: 500px;
-            align-items: center; gap: 15px;
+        /* 棋盤區 (自動伸縮) */
+        .board-section {
+            flex: 1; /* 佔據剩餘空間 */
+            display: flex; justify-content: center; align-items: center;
+            min-height: 0; /* 允許縮小 */
+            margin-bottom: 10px;
         }
 
-        /* 棋盤 */
         .board-wrapper {
-            width: 95vw; max-width: 500px;
             background-color: var(--board-bg);
             border-radius: 8px; padding: 5px;
-            aspect-ratio: 1 / 1;
-            display: flex; justify-content: center; align-items: center;
+            /* 關鍵：保持正方形，但不要超過寬度或高度的限制 */
+            width: min(90vw, 45vh); 
+            height: min(90vw, 45vh);
+            display: grid;
+            grid-template-columns: repeat(8, 1fr); 
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
             position: relative;
         }
-
+        
+        /* 鎖定遮罩 */
         .board-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10; display: none; 
         }
         .board-wrapper.locked .board-overlay { display: block; }
 
-        .board-container {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr); 
-            grid-template-rows: repeat(8, 1fr);
-            gap: 2px; width: 100%; height: 100%;
-            
-            /* ★★★ 關鍵修復：禁止瀏覽器處理此區域的觸控 (解決滑動失效) ★★★ */
-            touch-action: none; 
-        }
-
         .cell {
             background-color: var(--cell-empty);
             border-radius: 2px;
             display: flex; justify-content: center; align-items: center;
-            font-weight: bold; font-size: 1rem; color: white;
+            font-weight: bold; font-size: 0.8rem; color: white;
             user-select: none;
         }
-
         .cell.filled { background-color: var(--cell-filled); }
         .cell.new { background-color: var(--cell-new) !important; }
-        .cell.preview { background-color: var(--cell-preview) !important; color: #000; box-shadow: inset 0 0 0 2px #fff; } 
+        .cell.preview { background-color: var(--cell-preview) !important; color: #000; box-shadow: inset 0 0 0 2px #fff; }
 
-        .controls {
-            width: 95vw; max-width: 500px;
+        /* 控制區 */
+        .controls-section {
+            flex: 0 0 auto; /* 固定高度 */
+            display: flex; flex-direction: column; gap: 8px;
+            padding-bottom: 10px; /* 預留底部安全區 */
+        }
+
+        .btn-row {
             display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
         }
 
         button {
             border: none; padding: 12px; border-radius: 6px;
             font-size: 1rem; cursor: pointer; font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         button:active { transform: scale(0.96); }
         .btn-undo { background-color: #95A5A6; color: white; }
         .btn-clear { background-color: #E74C3C; color: white; }
-        
-        .btn-solve { 
-            background-color: #27AE60; color: white; 
-            width: 100%; margin: 10px 0; font-size: 1.2rem; padding: 15px;
-        }
-        .btn-next { background-color: #F39C12; color: white; width: 100%; padding: 15px;}
+        .btn-solve { background-color: #27AE60; color: white; width: 100%; font-size: 1.1rem; }
+        .btn-next { background-color: #F39C12; color: white; width: 100%; }
         .btn-next:disabled { background-color: #555; opacity: 0.5; }
 
-        .right-panel {
-            width: 95vw; max-width: 500px;
-            display: flex; flex-direction: column;
+        .status-msg {
+            text-align: center; height: 20px; font-size: 0.9rem;
+            color: #F1C40F; font-weight: bold; overflow: hidden;
         }
-
-        .panel-label { margin-bottom: 5px; font-size: 0.9rem; color: #BDC3C7; text-align: center;}
 
         /* 手牌區 */
         .hand-area {
             background-color: var(--board-bg);
-            height: 90px; border-radius: 8px;
-            padding: 5px 10px; display: flex; gap: 10px;
+            height: 70px; border-radius: 8px;
+            padding: 5px; display: flex; gap: 10px;
             align-items: center; justify-content: center;
-            margin-bottom: 10px;
         }
-
         .hand-piece {
             position: relative;
             background: rgba(0,0,0,0.2);
-            padding: 4px; border-radius: 4px;
+            padding: 2px; border-radius: 4px;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
         }
         .hand-piece .remove-btn {
-            position: absolute; top: -8px; right: -8px;
+            position: absolute; top: -6px; right: -6px;
             background: #E74C3C; color: white; border-radius: 50%;
-            width: 22px; height: 22px; font-size: 14px;
-            line-height: 22px; text-align: center; font-weight: bold;
-            border: 2px solid var(--board-bg); cursor: pointer;
+            width: 18px; height: 18px; font-size: 12px;
+            line-height: 18px; text-align: center; font-weight: bold;
+            border: 2px solid var(--board-bg);
         }
+        .hand-piece canvas { max-height: 50px; }
 
-        .status-msg {
-            text-align: center; margin: 5px 0; min-height: 24px;
-            color: #F1C40F; font-weight: bold;
-        }
-
-        /* 方塊庫選單 */
+        /* 方塊庫選單 (唯一可以捲動的地方) */
         .library-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--modal-bg); z-index: 100;
             display: flex; flex-direction: column; align-items: center;
             padding: 20px;
-            backdrop-filter: blur(5px); transition: opacity 0.3s;
-            visibility: hidden; opacity: 0;
+            visibility: hidden; opacity: 0; transition: opacity 0.2s;
         }
         .library-modal.show { visibility: visible; opacity: 1; }
 
         .modal-header {
             width: 100%; max-width: 600px;
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 10px; flex: 0 0 auto;
         }
-        .close-btn {
-            background: transparent; font-size: 2rem; color: white; padding: 0; box-shadow: none;
-        }
-
-        .category-title {
-            width: 100%; max-width: 600px;
-            color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555;
-        }
+        .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; }
 
         .library-content {
             flex: 1; width: 100%; max-width: 600px;
-            overflow-y: auto; padding-bottom: 50px;
-            /* 讓選單內部可以捲動，但不影響盤面 */
+            overflow-y: auto; /* 允許內部捲動 */
             -webkit-overflow-scrolling: touch; 
+            padding-bottom: 40px;
         }
 
+        .category-title {
+            color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555;
+        }
         .lib-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 15px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)); gap: 12px;
         }
-
         .lib-piece {
-            aspect-ratio: 1;
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative;
-            transition: transform 0.1s;
-            user-select: none; -webkit-user-select: none;
-        }
-        .lib-piece:active { transform: scale(0.95); }
-        
-        .lib-piece .count-badge {
-            position: absolute; top: -5px; right: -5px;
-            background: #2ECC71; color: white;
-            border-radius: 50%; width: 20px; height: 20px;
-            font-size: 12px; line-height: 20px; text-align: center;
-            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            aspect-ratio: 1; background-color: rgba(255,255,255,0.1);
+            border-radius: 8px; display: flex; justify-content: center; align-items: center;
         }
         .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
+        .lib-piece .count-badge {
+            position: absolute; top: -5px; right: -5px;
+            background: #2ECC71; color: white; border-radius: 50%; width: 18px; height: 18px;
+            font-size: 10px; line-height: 18px; text-align: center; display: none;
+        }
         .lib-piece.selected .count-badge { display: block; }
+        .lib-piece canvas { max-width: 80%; max-height: 80%; }
 
-        .lib-piece canvas { max-width: 85%; max-height: 85%; }
     </style>
 </head>
 <body>
 
+<div class="app-container">
     <div class="header">
         <button class="menu-btn" onclick="openLibrary()">☰ 方塊庫</button>
-        <h1>Block Blast Solver v4.4</h1>
+        <h1>Block Blast Solver v5.0</h1>
     </div>
 
-    <div class="container">
+    <div class="board-section">
         <div id="boardWrapper" class="board-wrapper">
             <div class="board-overlay"></div>
-            <div id="board" class="board-container"></div>
-        </div>
-        
-        <div class="controls">
+            </div>
+    </div>
+
+    <div class="controls-section">
+        <div class="btn-row">
             <button class="btn-undo" onclick="undoBoard()">↺ 上一步</button>
             <button class="btn-clear" onclick="clearBoard()">🗑 清空</button>
         </div>
 
-        <div class="right-panel">
-            <div id="status" class="status-msg"></div>
-            <button class="btn-solve" onclick="runSolver()">✨ 計算最佳解 ✨</button>
-            <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled>執行這一步 ▶</button>
-            <div class="panel-label" style="margin-top: 10px;">本輪方塊</div>
-            <div id="hand" class="hand-area"><span style="color: #777;">(空)</span></div>
-        </div>
-    </div>
+        <div id="status" class="status-msg"></div>
 
-    <div id="libModal" class="library-modal">
-        <div class="modal-header">
-            <h2 style="margin:0">選擇方塊 (<span id="selCount">0</span>/3)</h2>
-            <button class="close-btn" onclick="closeLibrary()">×</button>
-        </div>
-        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;">點擊累加，長按取消</div>
-        <div id="libContent" class="library-content"></div>
+        <button class="btn-solve" onclick="runSolver()">✨ 計算最佳解 ✨</button>
+        <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled>執行這一步 ▶</button>
+        
+        <div style="text-align: center; font-size: 0.8rem; color: #aaa;">本輪方塊</div>
+        <div id="hand" class="hand-area"><span style="color: #777;">(空)</span></div>
     </div>
+</div>
+
+<div id="libModal" class="library-modal">
+    <div class="modal-header">
+        <h2 style="margin:0">選擇方塊 (<span id="selCount">0</span>/3)</h2>
+        <button class="close-btn" onclick="closeLibrary()">×</button>
+    </div>
+    <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;">點擊累加，長按取消</div>
+    <div id="libContent" class="library-content"></div>
+</div>
 
 <script>
+// ==================== 禁止全域捲動 (iOS 關鍵) ====================
+document.body.addEventListener('touchmove', function(e) {
+    // 如果觸控的目標不是在 "library-content" (選單) 裡面，就禁止捲動
+    if (!e.target.closest('.library-content')) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
 // ==================== 資料與設定 ====================
 const SHAPES = {
     '1': [[1]],
@@ -280,7 +276,7 @@ function getColor(name) {
     return '#95A5A6';
 }
 
-// ==================== 狀態與變數 ====================
+// ==================== 程式邏輯 ====================
 let board = Array(8).fill().map(() => Array(8).fill(0));
 let newlyPlacedCells = []; 
 let boardHistory = [];
@@ -290,7 +286,6 @@ let currentStepIdx = 0;
 let isDragging = false;
 let paintMode = 1; 
 
-const boardEl = document.getElementById('board');
 const boardWrapper = document.getElementById('boardWrapper');
 const handEl = document.getElementById('hand');
 const libContentEl = document.getElementById('libContent');
@@ -299,17 +294,19 @@ const selCountEl = document.getElementById('selCount');
 const statusEl = document.getElementById('status');
 const btnNext = document.getElementById('btnNext');
 
-// ==================== 初始化 ====================
 function init() {
     renderBoard();
     renderLibraryMenu(); 
+    // 全域滑鼠釋放
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('touchend', () => isDragging = false);
 }
 
-// ==================== 渲染邏輯 ====================
+// ==================== 繪圖邏輯 ====================
 function renderBoard() {
-    boardEl.innerHTML = '';
+    boardWrapper.innerHTML = '<div class="board-overlay"></div>'; // 重置
+    
+    // JS動態產生 grid
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             const cell = document.createElement('div');
@@ -324,16 +321,16 @@ function renderBoard() {
             cell.dataset.r = r;
             cell.dataset.c = c;
             
+            // 綁定事件
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
-            // 觸控事件 (重要：passive: false 才能 preventDefault)
             cell.addEventListener('touchstart', onPointerDown, {passive: false});
             
-            boardEl.appendChild(cell);
+            boardWrapper.appendChild(cell);
         }
     }
-    // ★★★ 綁定 touchmove 到容器，並阻止預設行為，這是滑動修復的關鍵 ★★★
-    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
+    // 綁定 touchmove 到 wrapper
+    boardWrapper.addEventListener('touchmove', onTouchMove, {passive: false});
 }
 
 function renderLibraryMenu() {
@@ -358,7 +355,7 @@ function renderLibraryMenu() {
             badge.className = 'count-badge';
             div.appendChild(badge);
 
-            const canvas = drawShapeCanvas(SHAPES[name], 8, getColor(name));
+            const canvas = drawShapeCanvas(SHAPES[name], 6, getColor(name));
             div.appendChild(canvas);
             grid.appendChild(div);
         });
@@ -371,10 +368,9 @@ function setupLibraryItemEvents(element, name) {
     let isLongPress = false;
 
     const startPress = (e) => {
-        // 如果是多點觸控，不阻止
+        // 多點不處理
         if (e.type === 'touchstart' && e.touches.length > 1) return;
         
-        // ★★★ 這裡不 preventDefault，保留選單捲動能力 ★★★
         isLongPress = false;
         pressTimer = setTimeout(() => {
             isLongPress = true;
@@ -382,52 +378,43 @@ function setupLibraryItemEvents(element, name) {
         }, 500);
     };
 
-    const cancelPress = () => {
-        if (pressTimer) clearTimeout(pressTimer);
-    };
+    const cancelPress = () => { if (pressTimer) clearTimeout(pressTimer); };
 
     const endPress = (e) => {
         if (pressTimer) clearTimeout(pressTimer);
         if (!isLongPress) {
-            // 防止雙重觸發
-            if (e.type === 'touchend') {
-                e.preventDefault(); 
-            }
+            // 如果不是長按，視為點擊
+            if (e.type === 'touchend') e.preventDefault();
             addInstanceToHand(name);
         }
     };
 
     element.addEventListener('mousedown', startPress);
     element.addEventListener('mouseleave', cancelPress);
-    element.addEventListener('mouseup', endPress); // 改由 endPress 判斷
-
+    element.addEventListener('mouseup', endPress);
     element.addEventListener('touchstart', startPress, {passive: false});
-    element.addEventListener('touchmove', cancelPress); 
+    element.addEventListener('touchmove', cancelPress);
     element.addEventListener('touchend', endPress);
 }
 
 function renderHand() {
     handEl.innerHTML = '';
     if (hand.length === 0) {
-        handEl.innerHTML = '<span style="color: #777; font-size: 0.9rem;">(空)</span>';
+        handEl.innerHTML = '<span style="color: #777;">(空)</span>';
         selCountEl.innerText = 0;
         return;
     }
     selCountEl.innerText = hand.length;
-    
     hand.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'hand-piece';
         div.onclick = () => { removeFromHand(idx); }; 
-        
-        const canvas = drawShapeCanvas(item.shape, 10, getColor(item.name));
+        const canvas = drawShapeCanvas(item.shape, 8, getColor(item.name));
         div.appendChild(canvas);
-        
         const removeBtn = document.createElement('div');
         removeBtn.className = 'remove-btn';
         removeBtn.innerText = 'x';
         div.appendChild(removeBtn);
-        
         handEl.appendChild(div);
     });
 }
@@ -439,35 +426,24 @@ function drawShapeCanvas(shape, cellSize, color) {
     canvas.width = cols * cellSize;
     canvas.height = rows * cellSize;
     const ctx = canvas.getContext('2d');
-    
     ctx.fillStyle = color;
     for(let r=0; r<rows; r++) {
         for(let c=0; c<cols; c++) {
-            if(shape[r][c]) {
-                ctx.fillRect(c*cellSize, r*cellSize, cellSize-1, cellSize-1);
-            }
+            if(shape[r][c]) ctx.fillRect(c*cellSize, r*cellSize, cellSize-1, cellSize-1);
         }
     }
     return canvas;
 }
 
-// ==================== 選單邏輯 ====================
-function openLibrary() {
-    updateLibraryUI();
-    modalEl.classList.add('show');
-}
-
-function closeLibrary() {
-    modalEl.classList.remove('show');
-}
+// ==================== 互動邏輯 ====================
+function openLibrary() { updateLibraryUI(); modalEl.classList.add('show'); }
+function closeLibrary() { modalEl.classList.remove('show'); }
 
 function addInstanceToHand(name) {
     if (hand.length < 3) {
         addToHand(name);
         updateLibraryUI();
-        if (hand.length === 3) {
-            setTimeout(closeLibrary, 200);
-        }
+        if (hand.length === 3) setTimeout(closeLibrary, 200);
     }
 }
 
@@ -476,9 +452,7 @@ function handleLongPress(name) {
     if (count > 0) {
         if (confirm(`確定要清除已選的 ${count} 個此方塊嗎？`)) {
             hand = hand.filter(h => h.name !== name);
-            renderHand();
-            updateLibraryUI();
-            resetSolution();
+            renderHand(); updateLibraryUI(); resetSolution();
         }
     }
 }
@@ -489,7 +463,6 @@ function updateLibraryUI() {
         const name = div.dataset.name;
         const count = hand.filter(h => h.name === name).length;
         const badge = div.querySelector('.count-badge');
-        
         if (count > 0) {
             div.classList.add('selected');
             badge.innerText = 'x' + count;
@@ -502,7 +475,7 @@ function updateLibraryUI() {
     selCountEl.innerText = hand.length;
 }
 
-// ==================== 盤面互動 (滑動修復核心) ====================
+// ==================== 盤面滑動 (Lockdown) ====================
 function lockBoard(locked) {
     if (locked) boardWrapper.classList.add('locked');
     else boardWrapper.classList.remove('locked');
@@ -520,18 +493,15 @@ function updateCell(r, c) {
     if (board[r][c] !== paintMode) {
         board[r][c] = paintMode;
         newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === r && p.c === c));
-        renderBoard();
-        resetSolution();
+        renderBoard(); resetSolution();
     }
 }
 
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
     if (e.type === 'touchstart' && e.touches.length > 1) return;
-    
-    // ★★★ 關鍵：告訴瀏覽器不要執行預設行為(捲動) ★★★
-    if (e.cancelable) e.preventDefault();
-    
+    if (e.cancelable) e.preventDefault(); // 禁止瀏覽器處理
+
     isDragging = true;
     const r = parseInt(this.dataset.r);
     const c = parseInt(this.dataset.c);
@@ -553,13 +523,10 @@ function onPointerEnter(e) {
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
     if (!isDragging) return;
-    
-    // ★★★ 關鍵：阻止捲動，並手動計算手指下的元素 ★★★
-    if (e.cancelable) e.preventDefault();
+    if (e.cancelable) e.preventDefault(); // 這裡再次確保不捲動
     
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    
     if (target && target.classList.contains('cell')) {
         const r = parseInt(target.dataset.r);
         const c = parseInt(target.dataset.c);
@@ -571,9 +538,7 @@ function clearBoard() {
     saveState();
     board = Array(8).fill().map(() => Array(8).fill(0));
     newlyPlacedCells = [];
-    renderBoard();
-    resetSolution();
-    lockBoard(false); 
+    renderBoard(); resetSolution(); lockBoard(false); 
 }
 
 function undoBoard() {
@@ -581,24 +546,19 @@ function undoBoard() {
         const state = boardHistory.pop();
         board = state.board;
         newlyPlacedCells = state.newlyPlaced || [];
-        renderBoard();
-        resetSolution();
-        lockBoard(false); 
+        renderBoard(); resetSolution(); lockBoard(false); 
     }
 }
 
 function addToHand(name) {
     if (hand.length >= 3) return;
     hand.push({ name: name, shape: SHAPES[name] });
-    renderHand();
-    resetSolution();
+    renderHand(); resetSolution();
 }
 
 function removeFromHand(idx) {
     hand.splice(idx, 1);
-    renderHand();
-    updateLibraryUI();
-    resetSolution();
+    renderHand(); updateLibraryUI(); resetSolution();
 }
 
 // ==================== 算法 ====================
@@ -609,30 +569,23 @@ function resetSolution() {
     btnNext.disabled = true;
     btnNext.innerText = "執行這一步 ▶";
     const previews = document.querySelectorAll('.cell.preview');
-    previews.forEach(el => {
-        el.classList.remove('preview');
-        el.innerText = '';
-    });
+    previews.forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
     lockBoard(false); 
 }
 
 function solve(currentBoard, pieces) {
-    let bestSol = null;
-    let maxCleared = -1;
+    let bestSol = null; let maxCleared = -1;
     function* permutations(arr) {
         if (arr.length <= 1) yield arr;
         else {
             for (let i = 0; i < arr.length; i++) {
                 const rest = arr.slice(0, i).concat(arr.slice(i + 1));
-                for (const p of permutations(rest)) {
-                    yield [arr[i], ...p];
-                }
+                for (const p of permutations(rest)) yield [arr[i], ...p];
             }
         }
     }
     function canPlace(b, piece, r, c) {
-        const rows = piece.length;
-        const cols = piece[0].length;
+        const rows = piece.length; const cols = piece[0].length;
         if (r + rows > 8 || c + cols > 8) return false;
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
@@ -643,12 +596,9 @@ function solve(currentBoard, pieces) {
     }
     function placeAndClear(b, piece, r, c) {
         let newB = b.map(row => [...row]);
-        const rows = piece.length;
-        const cols = piece[0].length;
+        const rows = piece.length; const cols = piece[0].length;
         for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols; j++) {
-                if (piece[i][j]) newB[r + i][c + j] = 1;
-            }
+            for (let j = 0; j < cols; j++) { if (piece[i][j]) newB[r + i][c + j] = 1; }
         }
         let clearR = [], clearC = [];
         for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR.push(i);
@@ -662,10 +612,7 @@ function solve(currentBoard, pieces) {
     }
     function backtrack(b, remainingPieces, path, totalCleared) {
         if (remainingPieces.length === 0) {
-            if (totalCleared > maxCleared) {
-                maxCleared = totalCleared;
-                bestSol = [...path];
-            }
+            if (totalCleared > maxCleared) { maxCleared = totalCleared; bestSol = [...path]; }
             return;
         }
         if (bestSol && maxCleared >= 5) return; 
@@ -685,68 +632,41 @@ function solve(currentBoard, pieces) {
         }
     }
     const perms = permutations(pieces);
-    for (const p of perms) {
-        backtrack(currentBoard, p, [], 0);
-        if (bestSol) break; 
-    }
+    for (const p of perms) { backtrack(currentBoard, p, [], 0); if (bestSol) break; }
     return bestSol;
 }
 
 function runSolver() {
-    if (hand.length === 0) {
-        statusEl.innerText = "請先選擇方塊！";
-        return;
-    }
+    if (hand.length === 0) { statusEl.innerText = "請先選擇方塊！"; return; }
     statusEl.innerText = "計算中...";
     setTimeout(() => {
         const sol = solve(board, hand);
-        if (sol) {
-            solutionSteps = sol;
-            currentStepIdx = 0;
-            previewStep();
-        } else {
-            statusEl.innerText = "❌ 無解！";
-        }
+        if (sol) { solutionSteps = sol; currentStepIdx = 0; previewStep(); }
+        else { statusEl.innerText = "❌ 無解！"; }
     }, 50);
 }
 
 function previewStep() {
     if (currentStepIdx >= solutionSteps.length) {
-        statusEl.innerText = "🎉 完成！";
-        statusEl.style.color = "#2ECC71";
-        btnNext.disabled = true;
-        btnNext.innerText = "完成";
-        hand = []; 
-        renderHand();
-        newlyPlacedCells = []; 
-        renderBoard();
-        document.querySelectorAll('.cell.preview').forEach(el => {
-            el.classList.remove('preview');
-            el.innerText = '';
-        });
-        lockBoard(false); 
-        return;
+        statusEl.innerText = "🎉 完成！"; statusEl.style.color = "#2ECC71";
+        btnNext.disabled = true; btnNext.innerText = "完成";
+        hand = []; renderHand(); newlyPlacedCells = []; renderBoard();
+        document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
+        lockBoard(false); return;
     }
     lockBoard(true);
     const step = solutionSteps[currentStepIdx];
     statusEl.innerText = `步驟 ${currentStepIdx + 1}: 消 ${step.cleared} 行`;
     statusEl.style.color = "#F1C40F";
-    btnNext.disabled = false;
-    btnNext.innerText = "執行這一步 ▶";
-    const cells = document.querySelectorAll('.cell');
-    cells.forEach(c => {
-        c.classList.remove('preview');
-        c.innerText = '';
-    });
+    btnNext.disabled = false; btnNext.innerText = "執行這一步 ▶";
+    document.querySelectorAll('.cell').forEach(c => { c.classList.remove('preview'); c.innerText = ''; });
     const shape = step.shape;
+    const cells = document.querySelectorAll('.cell');
     for(let i=0; i<shape.length; i++) {
         for(let j=0; j<shape[0].length; j++) {
             if (shape[i][j]) {
                 const idx = (step.r + i) * 8 + (step.c + j);
-                if (cells[idx]) {
-                    cells[idx].classList.add('preview');
-                    cells[idx].innerText = currentStepIdx + 1;
-                }
+                if (cells[idx]) { cells[idx].classList.add('preview'); cells[idx].innerText = currentStepIdx + 1; }
             }
         }
     }
@@ -759,10 +679,8 @@ function applyNextStep() {
     for(let i=0; i<step.shape.length; i++) {
         for(let j=0; j<step.shape[0].length; j++) {
             if (step.shape[i][j]) {
-                const r = step.r + i;
-                const c = step.c + j;
-                board[r][c] = 1;
-                newlyPlacedCells.push({r, c});
+                const r = step.r + i; const c = step.c + j;
+                board[r][c] = 1; newlyPlacedCells.push({r, c});
             }
         }
     }
@@ -770,18 +688,10 @@ function applyNextStep() {
     for(let i=0; i<8; i++) if(board[i].every(v=>v===1)) clearR.push(i);
     for(let j=0; j<8; j++) if(board.every(row=>row[j]===1)) clearC.push(j);
     if (clearR.length > 0 || clearC.length > 0) {
-        for(let row of clearR) for(let j=0; j<8; j++) {
-            board[row][j] = 0;
-            newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j));
-        }
-        for(let col of clearC) for(let i=0; i<8; i++) {
-            board[i][col] = 0;
-            newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col));
-        }
+        for(let row of clearR) for(let j=0; j<8; j++) { board[row][j] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j)); }
+        for(let col of clearC) for(let i=0; i<8; i++) { board[i][col] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col)); }
     }
-    renderBoard();
-    currentStepIdx++;
-    previewStep();
+    renderBoard(); currentStepIdx++; previewStep();
 }
 
 init();
