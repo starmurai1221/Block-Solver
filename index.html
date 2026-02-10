@@ -3,16 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v7.1</title>
+    <title>Block Blast Solver v9.0</title>
     <style>
+        /* --- 🎨 美術設定 --- */
         :root {
             --bg-color: #2C3E50;
             --board-bg: #34495E;
-            --cell-empty: #ECF0F1;
-            --cell-filled: #7F8C8D;
-            --cell-new: #3498DB;
-            --cell-preview: #2ECC71;
-            --cell-clearing: #F1C40F;
+            --cell-empty: rgba(236, 240, 241, 0.1); 
+            --img-filled: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjN0Y4QzhEIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTMwIDQwIEw0MCAzMCBMNTAgNDAgTDYwIDMwIEw3MCA0MCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjYwIiByPSI1IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI2MCIgcj0iNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==');
+            --img-new: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMzQ5OERCIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTIwIDMwIEwzMCAxNSBMNDAgMzAgTDYwIDMwIEw3MCAxNSBMODAgMzAiIGZpbGw9IiMyOTgwQjkiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjU1IiByPSI1IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1NSIgcj0iNSIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik00NSA3MCBRNTAgODAgNTUgNzAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIi8+PC9zdmc+');
+            --img-preview: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMkVDQzcxIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1IiBvcGFjaXR5PSIwLjgiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjY1IiByPSIxNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjMwIiBjeT0iNDUiIHI9IjgiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSI4IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNzAiIGN5PSI0NSIgcj0iOCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==');
+            --img-clearing: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjRjFDNDBGIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTUwIDEwIEw2MCA0MCBMOTAgNTAgTDYwIDYwIEw1MCA5MCBMNDAgNjAgTDEwIDUwIEw0MCA0MCBaIiBmaWxsPSIjZmZmIi8+PC9zdmc+');
+            --text-color: white;
             --modal-bg: rgba(44, 62, 80, 0.98);
         }
 
@@ -25,9 +27,10 @@
             margin: 0; padding: 10px;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
-            overscroll-behavior: none; 
+            /* 恢復捲動，移除 hidden/fixed */
             position: relative;
             user-select: none; -webkit-user-select: none;
+            padding-bottom: 50px; /* 底部留白 */
         }
 
         body::before {
@@ -77,6 +80,7 @@
             align-items: center; gap: 15px; z-index: 1;
         }
 
+        /* 棋盤 */
         .board-wrapper {
             width: 95vw; max-width: 500px;
             background-color: var(--board-bg);
@@ -84,6 +88,8 @@
             aspect-ratio: 1 / 1;
             display: flex; justify-content: center; align-items: center;
             position: relative;
+            /* ★★★ 關鍵：CSS 告訴瀏覽器這裡不能滑動捲軸，解決 Safari 問題第一步 ★★★ */
+            touch-action: none; 
         }
 
         .board-overlay {
@@ -97,21 +103,22 @@
             grid-template-columns: repeat(8, 1fr); 
             grid-template-rows: repeat(8, 1fr);
             gap: 2px; width: 100%; height: 100%;
-            touch-action: none; 
         }
 
         .cell {
             background-color: var(--cell-empty);
-            border-radius: 2px;
+            border-radius: 4px;
             display: flex; justify-content: center; align-items: center;
             font-weight: bold; font-size: 1rem; color: white;
             user-select: none;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
         }
 
-        .cell.filled { background-color: var(--cell-filled); }
-        .cell.new { background-color: var(--cell-new) !important; }
-        .cell.preview { background-color: var(--cell-preview) !important; color: #000; box-shadow: inset 0 0 0 2px #fff; } 
-        .cell.clearing { background-color: var(--cell-clearing) !important; animation: pulse 0.5s infinite alternate; }
+        .cell.filled { background-image: var(--img-filled); }
+        .cell.new { background-image: var(--img-new); }
+        .cell.clearing { background-image: var(--img-clearing); animation: pulse 0.5s infinite alternate; }
+        .cell.preview { background-image: var(--img-preview) !important; color: #000; opacity: 1 !important; } 
+        .cell.preview.clearing { box-shadow: inset 0 0 0 3px #F1C40F, 0 0 15px #F1C40F; z-index: 5; }
 
         @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
 
@@ -141,6 +148,7 @@
 
         .panel-label { margin-bottom: 5px; font-size: 0.9rem; color: #BDC3C7; text-align: center;}
 
+        /* 手牌區 */
         .hand-area {
             background-color: var(--board-bg);
             height: 90px; border-radius: 8px;
@@ -149,9 +157,12 @@
             margin-bottom: 10px;
         }
 
+        .mini-grid-wrapper { display: flex; justify-content: center; align-items: center; position: relative; }
+        .mini-grid { display: grid; gap: 1px; }
+        .mini-cell { width: 100%; height: 100%; background-image: var(--img-new); background-size: cover; border-radius: 1px; }
+
         .hand-piece {
-            position: relative;
-            background: rgba(0,0,0,0.2);
+            position: relative; background: rgba(0,0,0,0.2);
             padding: 4px; border-radius: 4px;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
         }
@@ -160,7 +171,7 @@
             background: #E74C3C; color: white; border-radius: 50%;
             width: 22px; height: 22px; font-size: 14px;
             line-height: 22px; text-align: center; font-weight: bold;
-            border: 2px solid var(--board-bg); cursor: pointer;
+            border: 2px solid var(--board-bg); cursor: pointer; z-index: 5;
         }
 
         .status-msg {
@@ -184,11 +195,9 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-bottom: 10px; flex-shrink: 0;
         }
-        /* 增加右上角按鈕群組 (清除 + 關閉) */
         .modal-controls { display: flex; gap: 15px; align-items: center; }
         
         .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; border: none; cursor: pointer; line-height: 1; }
-        /* 新增的選單內清除按鈕 */
         .clear-sel-btn { background: transparent; font-size: 1.5rem; color: #E74C3C; padding: 0; border: none; cursor: pointer; line-height: 1; }
 
         .category-title {
@@ -221,11 +230,10 @@
             background: #2ECC71; color: white;
             border-radius: 50%; width: 20px; height: 20px;
             font-size: 12px; line-height: 20px; text-align: center;
-            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 5;
         }
         .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
         .lib-piece.selected .count-badge { display: block; }
-        .lib-piece canvas { max-width: 85%; max-height: 85%; }
 
         .help-content {
             flex: 1; width: 100%; max-width: 600px;
@@ -265,17 +273,18 @@
             <div id="board" class="board-container"></div>
         </div>
         
-        <div class="controls">
-            <button class="btn-undo" onclick="undoBoard()" data-key="undo">↺ 上一步</button>
-            <button class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
-        </div>
-
         <div class="right-panel">
+            <div class="panel-label" style="margin-top: 10px;" data-key="handLabel">本輪方塊</div>
+            <div id="hand" class="hand-area"><span style="color: #777;" data-key="empty">(空)</span></div>
+        
+            <div class="controls" style="width: 100%; margin-bottom:10px;">
+                <button class="btn-undo" onclick="undoBoard()" data-key="undo">↺ 上一步</button>
+                <button class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
+            </div>
+
             <div id="status" class="status-msg"></div>
             <button id="btnSolve" class="btn-solve" onclick="runSolver()" data-key="solve">✨ 計算最佳解 ✨</button>
             <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled data-key="next">執行這一步 ▶</button>
-            <div class="panel-label" style="margin-top: 10px;" data-key="handLabel">本輪方塊</div>
-            <div id="hand" class="hand-area"><span style="color: #777;" data-key="empty">(空)</span></div>
         </div>
     </div>
 
@@ -435,18 +444,7 @@ const CATEGORIES = [
     { key: 4, list: ['L3', 'L3_r', 'L3_m', 'L3_mr', 'J3', 'J3_r'] }
 ];
 
-function getColor(name) {
-    if (name === '1') return '#F1C40F'; 
-    if (name.startsWith('L2')) return '#FF80AB'; 
-    if (name.includes('3_2')) return '#9B59B6'; 
-    if (name === 'L3' || name.startsWith('L3_') || name.startsWith('J3')) return '#5C6BC0'; 
-    if (name.startsWith('d')) return '#1ABC9C'; 
-    if (name.includes('h') || (name.includes('v') && !name.includes('z'))) return '#3498DB'; 
-    if (name.includes('x')) return '#E74C3C'; 
-    if (name.startsWith('T')) return '#2ECC71'; 
-    if (name.startsWith('z')) return '#E67E22'; 
-    return '#95A5A6';
-}
+function getColor(name) { return '#95A5A6'; }
 
 // ==================== 狀態 ====================
 let board = Array(8).fill().map(() => Array(8).fill(0));
@@ -477,11 +475,6 @@ function init() {
     updateLanguage(); 
     document.addEventListener('mouseup', () => isDragging = false);
     document.addEventListener('touchend', () => isDragging = false);
-    document.body.addEventListener('touchmove', function(e) {
-        if (!e.target.closest('.library-content') && !e.target.closest('.help-content')) {
-            e.preventDefault();
-        }
-    }, { passive: false });
 }
 
 // ==================== 語言 ====================
@@ -533,12 +526,17 @@ function renderBoard() {
                 cell.classList.add('clearing');
             }
             cell.dataset.r = r; cell.dataset.c = c;
+            
+            // 事件綁定
             cell.addEventListener('mousedown', onPointerDown);
             cell.addEventListener('mouseenter', onPointerEnter);
+            // 觸控：passive: false 允許我們 preventDefault
             cell.addEventListener('touchstart', onPointerDown, {passive: false});
+            
             boardEl.appendChild(cell);
         }
     }
+    // ★★★ 關鍵：防止捲動，僅在棋盤區域生效 ★★★
     boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
 }
 
@@ -559,14 +557,59 @@ function renderLibraryMenu() {
             const badge = document.createElement('div');
             badge.className = 'count-badge';
             div.appendChild(badge);
-            const canvas = drawShapeCanvas(SHAPES[name], 6, getColor(name));
-            div.appendChild(canvas);
+            
+            const preview = createShapeElement(SHAPES[name], 6);
+            div.appendChild(preview);
+            
             grid.appendChild(div);
         });
         libContentEl.appendChild(grid);
     });
 }
 
+function renderHand() {
+    handEl.innerHTML = '';
+    if (hand.length === 0) {
+        handEl.innerHTML = `<span style="color: #777;" data-key="empty">${TRANSLATIONS[currentLang].empty}</span>`;
+        return;
+    }
+    hand.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'hand-piece';
+        div.onclick = () => { removeFromHand(idx); }; 
+        
+        const preview = createShapeElement(item.shape, 8);
+        div.appendChild(preview);
+        
+        const removeBtn = document.createElement('div');
+        removeBtn.className = 'remove-btn';
+        removeBtn.innerText = 'x';
+        div.appendChild(removeBtn);
+        handEl.appendChild(div);
+    });
+}
+
+function createShapeElement(shape, cellSize) {
+    const rows = shape.length;
+    const cols = shape[0].length;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'mini-grid-wrapper';
+    const grid = document.createElement('div');
+    grid.className = 'mini-grid';
+    grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            const cell = document.createElement('div');
+            if (shape[r][c] === 1) cell.className = 'mini-cell';
+            grid.appendChild(cell);
+        }
+    }
+    wrapper.appendChild(grid);
+    return wrapper;
+}
+
+// ==================== 互動 ====================
 function setupLibraryItemEvents(element, name) {
     let pressTimer; let isLongPress = false;
     const startPress = (e) => {
@@ -590,41 +633,6 @@ function setupLibraryItemEvents(element, name) {
     element.addEventListener('touchend', endPress);
 }
 
-function renderHand() {
-    handEl.innerHTML = '';
-    if (hand.length === 0) {
-        handEl.innerHTML = `<span style="color: #777;" data-key="empty">${TRANSLATIONS[currentLang].empty}</span>`;
-        return;
-    }
-    hand.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'hand-piece';
-        div.onclick = () => { removeFromHand(idx); }; 
-        const canvas = drawShapeCanvas(item.shape, 8, getColor(item.name));
-        div.appendChild(canvas);
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'remove-btn';
-        removeBtn.innerText = 'x';
-        div.appendChild(removeBtn);
-        handEl.appendChild(div);
-    });
-}
-
-function drawShapeCanvas(shape, cellSize, color) {
-    const canvas = document.createElement('canvas');
-    const rows = shape.length; const cols = shape[0].length;
-    canvas.width = cols * cellSize; canvas.height = rows * cellSize;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = color;
-    for(let r=0; r<rows; r++) {
-        for(let c=0; c<cols; c++) {
-            if(shape[r][c]) ctx.fillRect(c*cellSize, r*cellSize, cellSize-1, cellSize-1);
-        }
-    }
-    return canvas;
-}
-
-// ==================== 互動 ====================
 function openLibrary() { updateLibraryUI(); document.getElementById('libModal').classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function openHelp() { document.getElementById('helpModal').classList.add('show'); }
@@ -636,13 +644,9 @@ function addInstanceToHand(name) {
     }
 }
 
-// 新增：清除手牌 (Menu)
 function clearSelection() {
     if(hand.length > 0) {
-        hand = [];
-        renderHand();
-        updateLibraryUI();
-        resetSolution();
+        hand = []; renderHand(); updateLibraryUI(); resetSolution();
     }
 }
 
@@ -668,12 +672,11 @@ function updateLibraryUI() {
             div.classList.remove('selected'); badge.style.display = 'none';
         }
     });
-    // 更新數字
     const selCount = document.getElementById('selCount');
     if(selCount) selCount.innerText = hand.length;
 }
 
-// ==================== 盤面控制 ====================
+// ==================== 盤面控制 (Touch Fix) ====================
 function lockBoard(locked) {
     if (locked) boardWrapper.classList.add('locked');
     else boardWrapper.classList.remove('locked');
@@ -698,7 +701,10 @@ function updateCell(r, c) {
 function onPointerDown(e) {
     if (solutionSteps.length > 0) return;
     if (e.type === 'touchstart' && e.touches.length > 1) return;
+    
+    // ★★★ 阻止預設行為 (如反白、捲動起始) ★★★
     if (e.cancelable) e.preventDefault();
+    
     isDragging = true;
     const r = parseInt(this.dataset.r);
     const c = parseInt(this.dataset.c);
@@ -719,7 +725,10 @@ function onPointerEnter(e) {
 function onTouchMove(e) {
     if (solutionSteps.length > 0) return; 
     if (!isDragging) return;
+    
+    // ★★★ 關鍵：只要是在棋盤上滑動，就絕對禁止瀏覽器捲動頁面 ★★★
     if (e.cancelable) e.preventDefault();
+    
     const touch = e.touches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
     if (target && target.classList.contains('cell')) {
@@ -729,14 +738,12 @@ function onTouchMove(e) {
     }
 }
 
-// 修改：清空時一併清空手牌
 function clearBoard() {
     saveState();
     board = Array(8).fill().map(() => Array(8).fill(0));
     newlyPlacedCells = []; clearingCells = [];
     hand = []; // 清空手牌
-    renderHand();
-    updateLibraryUI();
+    renderHand(); updateLibraryUI();
     renderBoard(); resetSolution(); lockBoard(false); 
 }
 
