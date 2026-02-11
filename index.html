@@ -3,19 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v10.3</title>
+    <title>Block Blast Solver v15.0</title>
     <style>
         /* --- 🎨 美術設定 --- */
         :root {
             --bg-color: #2C3E50;
             --board-bg: #34495E;
             --cell-empty: rgba(236, 240, 241, 0.1); 
+            --header-bg: #2C3E50;
+            
+            /* 圖片資源 */
             --img-filled: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjN0Y4QzhEIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTMwIDQwIEw0MCAzMCBMNTAgNDAgTDYwIDMwIEw3MCA0MCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiIGZpbGw9Im5vbmUiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjYwIiByPSI1IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI2MCIgcj0iNSIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==');
             --img-new: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMzQ5OERCIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTIwIDMwIEwzMCAxNSBMNDAgMzAgTDYwIDMwIEw3MCAxNSBMODAgMzAiIGZpbGw9IiMyOTgwQjkiLz48Y2lyY2xlIGN4PSIzNSIgY3k9IjU1IiByPSI1IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNjUiIGN5PSI1NSIgcj0iNSIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik00NSA3MCBRNTAgODAgNTUgNzAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIi8+PC9zdmc+');
             --img-preview: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjMkVDQzcxIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1IiBvcGFjaXR5PSIwLjgiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjY1IiByPSIxNSIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjMwIiBjeT0iNDUiIHI9IjgiIGZpbGw9IiNmZmYiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSI4IiBmaWxsPSIjZmZmIi8+PGNpcmNsZSBjeD0iNzAiIGN5PSI0NSIgcj0iOCIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==');
             --img-clearing: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBmaWxsPSIjRjFDNDBGIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjE1Ii8+PHBhdGggZD0iTTUwIDEwIEw2MCA0MCBMOTAgNTAgTDYwIDYwIEw1MCA5MCBMNDAgNjAgTDEwIDUwIEw0MCA0MCBaIiBmaWxsPSIjZmZmIi8+PC9zdmc+');
+            
             --text-color: white;
-            --modal-bg: rgba(44, 62, 80, 0.98);
+            
+            /* 方塊分類顏色 */
+            --color-dot: #F1C40F; --color-diag: #1ABC9C; --color-line: #3498DB;
+            --color-square: #E74C3C; --color-t: #2ECC71; --color-z: #E67E22;
+            --color-l-small: #FF80AB; --color-l-mid: #9B59B6; --color-l-mid-j: #E056FD; --color-l-big: #5C6BC0;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -23,285 +31,171 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
-            color: white;
-            margin: 0; padding: 10px;
+            color: var(--text-color);
+            margin: 0; padding: 0 10px 50px 10px;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
-            position: relative;
-            user-select: none; -webkit-user-select: none;
-            padding-bottom: 50px; 
-            -webkit-touch-callout: none;
+            overscroll-behavior: none; 
+            user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
         }
 
-        body::before {
-            content: "";
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; height: auto; aspect-ratio: 3/2;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5MDAgNjAwIj48cmVjdCB3aWR0aD0iOTAwIiBoZWlnaHQ9IjYwMCIgZmlsbD0iI0ZFMDAwMCIvPjxyZWN0IHdpZHRoPSI0NTAiIGhlaWdodD0iMzAwIiBmaWxsPSIjMDAwMDk1Ii8+PHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0ibTIyNSA2NiA5IDY1IDYxLTIzLTIzIDYxIDY1IDktNjUgOSAyMyA2MS02MS0yMy05IDY1LTktNjUtNjEgMjMgMjMtNjEtNjUtOSA2NS05LTIzLTYxIDYxIDIzem0wIDM3IDUuNiA0MC42IDM4LjEtMTQuMy0xNC4zIDM4LjEgNDAuNiA1LjYtNDAuNiA1LjYgMTQuMyAzOC4xLTM4LjEtMTQuMy01LjYgNDAuNi01LjYtNDAuNi0zOC4xIDE0LjMgMTQuMy0zOC4xLTQwLjYtNS42IDQwLjYtNS42LTE0LjMtMzguMSAzOC4xIDE0LjN6Ii8+PC9zdmc+');
-            background-repeat: no-repeat; background-position: center; background-size: contain;
-            opacity: 0.05; pointer-events: none; z-index: 0;
+        /* 標題置中 + Sticky */
+        .header { 
+            width: 100%; max-width: 500px; height: 50px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            margin-bottom: 10px; position: sticky; top: 0; z-index: 1000;
+            background-color: var(--header-bg);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); padding: 0 5px; margin-top: 0;
         }
-
-        .header {
-            width: 100%; max-width: 500px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 15px; z-index: 2; height: 40px; position: relative;
-        }
-
         h1 { 
-            position: absolute; left: 50%; transform: translateX(-50%);
-            margin: 0; font-size: 1.2rem; white-space: nowrap; 
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
+            margin: 0; font-size: 1.2rem; white-space: nowrap; pointer-events: none; z-index: 0;
         }
+        .header-left, .header-right { display: flex; gap: 15px; z-index: 1; }
+        .header-btn { background: transparent; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px; line-height: 1; }
 
-        .header-btn {
-            background: transparent; border: none;
-            color: white; font-size: 1.6rem;
-            cursor: pointer; padding: 5px;
-            display: flex; align-items: center; justify-content: center;
-            line-height: 1;
-        }
-        
-        .lang-select {
-            position: absolute; top: 45px; right: 40px;
-            background: #34495E; border-radius: 8px;
+        .lang-menu {
+            position: absolute; top: 50px; right: 0;
+            background: #34495E; border-radius: 0 0 8px 8px;
             padding: 5px; display: none; flex-direction: column;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 200;
-            min-width: 120px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 200;
+            min-width: 120px; border: 1px solid #555;
         }
-        .lang-select.show { display: flex; }
-        .lang-opt {
-            padding: 10px; color: white; background: none; border: none;
-            text-align: left; font-size: 1rem; cursor: pointer;
-        }
-        .lang-opt:hover { background: #2C3E50; }
+        .lang-menu.show { display: flex; }
+        .lang-opt { padding: 12px; color: white; background: none; border: none; text-align: left; font-size: 1rem; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .lang-opt:last-child { border-bottom: none; }
+        .lang-opt:active { background: #2C3E50; }
 
         .container {
-            display: flex; flex-direction: column; width: 100%; max-width: 500px;
-            align-items: center; gap: 15px; z-index: 1;
+            display: flex; flex-direction: column; width: 100%; max-width: 600px;
+            align-items: center; gap: 12px; margin-top: 5px;
         }
 
+        /* 1. 棋盤區 */
         .board-wrapper {
             width: 95vw; max-width: 500px;
-            background-color: var(--board-bg);
-            border-radius: 8px; padding: 5px;
-            aspect-ratio: 1 / 1;
-            display: flex; justify-content: center; align-items: center;
-            position: relative;
-            touch-action: none; 
+            background-color: var(--board-bg); border-radius: 8px; padding: 5px;
+            aspect-ratio: 1 / 1; display: flex; justify-content: center; align-items: center;
+            position: relative; touch-action: none;
         }
-
-        .board-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; display: none; 
-        }
+        .board-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; display: none; }
         .board-wrapper.locked .board-overlay { display: block; }
-
-        .board-container {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr); 
-            grid-template-rows: repeat(8, 1fr);
-            gap: 2px; width: 100%; height: 100%;
-            /* 繼承 v4 的設定 */
-            touch-action: none; 
-        }
+        .board-container { display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); gap: 2px; width: 100%; height: 100%; touch-action: none; }
 
         .cell {
-            background-color: var(--cell-empty);
-            border-radius: 4px;
+            background-color: var(--cell-empty); border-radius: 2px;
             display: flex; justify-content: center; align-items: center;
             font-weight: bold; font-size: 1rem; color: white;
-            user-select: none;
+            user-select: none; touch-action: none;
             background-size: cover; background-position: center; background-repeat: no-repeat;
-            /* 繼承 v4 的設定，確保格子本身能接收觸控 */
-            touch-action: none;
         }
-
         .cell.filled { background-image: var(--img-filled); }
         .cell.new { background-image: var(--img-new); }
-        .cell.clearing { background-image: var(--img-clearing); animation: pulse 0.5s infinite alternate; }
         .cell.preview { background-image: var(--img-preview) !important; color: #000; opacity: 1 !important; } 
+        .cell.clearing { background-image: var(--img-clearing); animation: pulse 0.5s infinite alternate; }
         .cell.preview.clearing { box-shadow: inset 0 0 0 3px #F1C40F, 0 0 15px #F1C40F; z-index: 5; }
-
         @keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
 
-        .controls {
-            width: 95vw; max-width: 500px;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-        }
-
-        button {
-            border: none; padding: 12px; border-radius: 6px;
-            font-size: 1rem; cursor: pointer; font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: all 0.2s;
-        }
-        button:active { transform: scale(0.96); }
-        button:disabled { background-color: #555 !important; color: #aaa !important; cursor: not-allowed; box-shadow: none; }
-
-        .btn-undo { background-color: #95A5A6; color: white; }
-        .btn-clear { background-color: #E74C3C; color: white; }
-        .btn-solve { background-color: #27AE60; color: white; width: 100%; margin: 10px 0; font-size: 1.2rem; padding: 15px; }
-        .btn-next { background-color: #F39C12; color: white; width: 100%; padding: 15px;}
-        
-        .right-panel {
-            width: 95vw; max-width: 500px;
-            display: flex; flex-direction: column;
-        }
-
-        .panel-label { margin-bottom: 5px; font-size: 0.9rem; color: #BDC3C7; text-align: center;}
-
+        /* 2. 手牌區 */
+        .hand-wrapper { width: 95vw; max-width: 500px; display: flex; flex-direction: column; gap: 5px; }
+        .panel-label { font-size: 0.9rem; color: #BDC3C7; text-align: center; }
         .hand-area {
-            background-color: var(--board-bg);
-            height: 90px; border-radius: 8px;
-            padding: 5px 10px; display: flex; gap: 10px;
-            align-items: center; justify-content: center;
-            margin-bottom: 10px;
+            background-color: var(--board-bg); height: 80px; border-radius: 8px;
+            padding: 5px 10px; display: flex; gap: 10px; align-items: center; justify-content: flex-start;
+            overflow-x: auto; white-space: nowrap;
         }
-
-        .mini-grid-wrapper { display: flex; justify-content: center; align-items: center; position: relative; }
-        .mini-grid { display: grid; gap: 1px; }
-        .mini-cell { width: 100%; height: 100%; background-image: var(--img-new); background-size: cover; border-radius: 1px; }
-
         .hand-piece {
-            position: relative; background: rgba(0,0,0,0.2);
-            padding: 4px; border-radius: 4px;
+            position: relative; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 4px;
             flex-shrink: 0; display: flex; align-items: center; justify-content: center;
         }
         .hand-piece .remove-btn {
-            position: absolute; top: -8px; right: -8px;
-            background: #E74C3C; color: white; border-radius: 50%;
-            width: 22px; height: 22px; font-size: 14px;
-            line-height: 22px; text-align: center; font-weight: bold;
-            border: 2px solid var(--board-bg); cursor: pointer; z-index: 5;
+            position: absolute; top: -5px; right: -5px; background: #E74C3C; color: white;
+            border-radius: 50%; width: 18px; height: 18px; font-size: 12px;
+            line-height: 18px; text-align: center; font-weight: bold;
         }
 
-        .status-msg {
-            text-align: center; margin: 5px 0; min-height: 24px;
-            color: #F1C40F; font-weight: bold;
-        }
+        /* 3. 執行按鈕 */
+        .action-area { width: 95vw; max-width: 500px; display: flex; flex-direction: column; gap: 5px; }
+        .btn-action { background-color: #27AE60; color: white; width: 100%; font-size: 1.3rem; padding: 15px; border-radius: 8px; border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background-color 0.3s; cursor: pointer; }
+        .btn-action:active { transform: scale(0.98); }
+        .btn-action.step { background-color: #F39C12; }
+        .btn-action.finish { background-color: #2ECC71; }
 
-        /* Modal */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--modal-bg); z-index: 100;
-            display: flex; flex-direction: column; align-items: center;
-            padding: 20px;
-            backdrop-filter: blur(5px); transition: opacity 0.3s;
-            visibility: hidden; opacity: 0;
+        /* 4. 控制按鈕 */
+        .controls { width: 95vw; max-width: 500px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 5px; }
+        button {
+            border: none; padding: 12px; border-radius: 6px;
+            font-size: 1rem; cursor: pointer; font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;
         }
-        .modal.show { visibility: visible; opacity: 1; }
+        button:active { transform: scale(0.96); }
+        button:disabled { background-color: #555 !important; color: #aaa !important; cursor: not-allowed; }
+        .btn-undo { background-color: #95A5A6; color: white; }
+        .btn-clear { background-color: #E74C3C; color: white; }
+        .btn-fill { background-color: #34495E; color: white; border: 1px solid #7F8C8D; } 
 
-        .modal-header {
-            width: 100%; max-width: 600px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; flex-shrink: 0;
+        /* 側邊選單 */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 2000; display: none; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.show { display: block; opacity: 1; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; height: 100%; width: 85vw; max-width: 350px;
+            background-color: var(--bg-color); z-index: 2001; 
+            transform: translateX(-100%); transition: transform 0.3s ease-out;
+            display: flex; flex-direction: column; padding: 15px; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
         }
-        .modal-controls { display: flex; gap: 15px; align-items: center; }
-        
-        .close-btn { background: transparent; font-size: 2rem; color: white; padding: 0; border: none; cursor: pointer; line-height: 1; }
-        .clear-sel-btn { background: transparent; font-size: 1.5rem; color: #E74C3C; padding: 0; border: none; cursor: pointer; line-height: 1; }
-        
-        .confirm-btn {
-            background-color: #2ECC71; color: white;
-            border: none; padding: 5px 12px; border-radius: 4px;
-            font-size: 0.9rem; cursor: pointer; display: none; 
-            font-weight: bold;
-        }
-
-        .category-title {
-            width: 100%; max-width: 600px;
-            color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555;
-        }
-
-        .library-content {
-            flex: 1; width: 100%; max-width: 600px;
-            overflow-y: auto; padding-bottom: 50px;
-            -webkit-overflow-scrolling: touch; 
-        }
-
-        .lib-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 15px;
-        }
-
-        .lib-piece {
-            aspect-ratio: 1;
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; position: relative;
-            transition: transform 0.1s;
-        }
+        .sidebar.show { transform: translateX(0); }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        .sidebar-controls { display: flex; gap: 10px; }
+        .library-content { flex: 1; overflow-y: auto; padding-bottom: 50px; -webkit-overflow-scrolling: touch; }
+        .category-title { color: #BDC3C7; font-size: 0.9rem; margin: 15px 0 5px 0; border-bottom: 1px solid #555; }
+        .lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .lib-piece { aspect-ratio: 1; background-color: rgba(255,255,255,0.05); border-radius: 4px; display: flex; justify-content: center; align-items: center; cursor: pointer; position: relative; }
         .lib-piece:active { transform: scale(0.95); }
-        
-        .lib-piece .count-badge {
-            position: absolute; top: -5px; right: -5px;
-            background: #2ECC71; color: white;
-            border-radius: 50%; width: 20px; height: 20px;
-            font-size: 12px; line-height: 20px; text-align: center;
-            display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 5;
-        }
+        .lib-piece .count-badge { position: absolute; top: -5px; right: -5px; background: #2ECC71; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; line-height: 20px; text-align: center; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 5; }
         .lib-piece.selected { border: 2px solid #2ECC71; background-color: rgba(46, 204, 113, 0.2); }
         .lib-piece.selected .count-badge { display: block; }
-        .lib-piece canvas { max-width: 85%; max-height: 85%; }
+        .lib-piece canvas { max-width: 95%; max-height: 95%; }
 
-        /* 數量選擇器 Popup */
-        .qty-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 200; display: none; 
-        }
-        .qty-popup {
-            position: absolute; 
-            background: #34495E;
-            border: 2px solid #2ECC71;
-            border-radius: 12px;
-            padding: 8px;
-            display: none;
-            gap: 10px;
-            z-index: 201;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-        }
-        .qty-btn {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: #2ECC71;
-            color: white;
-            border: none;
-            font-size: 1.2rem;
-            font-weight: bold;
-            cursor: pointer;
-        }
+        /* Popup */
+        .qty-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3000; display: none; }
+        .qty-popup { position: absolute; background: #34495E; border: 2px solid #2ECC71; border-radius: 12px; padding: 10px; display: none; gap: 15px; z-index: 3001; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+        .qty-btn { width: 45px; height: 45px; border-radius: 50%; background: #2ECC71; color: white; border: none; font-size: 1.4rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         .qty-btn:active { transform: scale(0.9); }
 
-        .help-content {
-            flex: 1; width: 100%; max-width: 600px;
-            overflow-y: auto; color: #ddd; font-size: 0.95rem; line-height: 1.6;
-        }
-        .help-content h3 { color: #3498DB; margin-top: 0; }
-        .help-content ul { padding-left: 20px; }
-        .help-content li { margin-bottom: 5px; }
-        .help-footer {
-            margin-top: 20px; padding-top: 15px; border-top: 1px solid #555; text-align: center;
-        }
-        .help-footer a { color: #2ECC71; text-decoration: none; font-weight: bold; }
+        .status-msg { text-align: center; margin: 5px 0; min-height: 20px; color: #F1C40F; font-weight: bold; }
 
+        /* Help Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 4000; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
+        .modal.show { visibility: visible; opacity: 1; }
+        .modal-container { position: relative; width: 100%; max-width: 500px; }
+        .modal-card { background: #34495E; width: 100%; border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); display: flex; flex-direction: column; max-height: 80vh; text-align: center; }
+        .modal-close-outer { position: absolute; top: -40px; right: 0; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer; line-height: 1; padding: 5px; }
+        .modal-header { margin-bottom: 15px; border-bottom: 1px solid #555; padding-bottom: 10px; width: 100%; }
+        .help-content { overflow-y: auto; color: #ddd; font-size: 0.95rem; line-height: 1.6; }
+        .help-content h3 { color: #3498DB; margin-top: 15px; margin-bottom: 5px; }
+        .help-content p { margin: 5px 0; }
+        .help-footer { margin-top: 20px; padding-top: 15px; border-top: 1px solid #555; }
+        .help-footer a { color: #2ECC71; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <button class="header-btn" onclick="openLibrary()" style="font-size: 1.8rem;">▦</button>
-        <h1>Block Blast Solver</h1>
-        <div style="display:flex; gap:15px;">
+        <div class="header-left">
+            <button class="header-btn" onclick="openSidebar()">☰</button>
+        </div>
+        <h1>Block Blast 解題器</h1>
+        <div class="header-right">
             <button class="header-btn" onclick="toggleLangMenu()">🌐</button>
             <button class="header-btn" onclick="openHelp()">❔</button>
         </div>
-    </div>
-
-    <div id="langMenu" class="lang-select">
-        <button class="lang-opt" onclick="setLang('zh')">繁體中文</button>
-        <button class="lang-opt" onclick="setLang('en')">English</button>
-        <button class="lang-opt" onclick="setLang('jp')">日本語</button>
-        <button class="lang-opt" onclick="setLang('kr')">한국어</button>
+        
+        <div id="langMenu" class="lang-menu">
+            <button class="lang-opt" onclick="setLang('zh')">繁體中文</button>
+            <button class="lang-opt" onclick="setLang('en')">English</button>
+            <button class="lang-opt" onclick="setLang('jp')">日本語</button>
+            <button class="lang-opt" onclick="setLang('kr')">한국어</button>
+        </div>
     </div>
 
     <div class="container">
@@ -310,192 +204,146 @@
             <div id="board" class="board-container"></div>
         </div>
         
-        <div class="right-panel">
-            <div class="panel-label" style="margin-top: 10px;" data-key="handLabel">本輪方塊</div>
-            <div id="hand" class="hand-area"><span style="color: #777;" data-key="empty">(空)</span></div>
-        
-            <div class="controls" style="width: 100%; margin-bottom:10px;">
-                <button id="btnUndo" class="btn-undo" onclick="undoBoard()" data-key="undo" disabled>↺ 上一步</button>
-                <button id="btnClear" class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
-            </div>
+        <div class="hand-wrapper">
+            <div class="panel-label" id="handLabel" data-key="handLabel">本輪方塊 (點擊 x 刪除)</div>
+            <div id="hand" class="hand-area"></div>
+        </div>
 
+        <div class="action-area">
+            <button id="btnAction" class="btn-action" onclick="handleAction()" data-key="solve">✨ 計算最佳解 ✨</button>
             <div id="status" class="status-msg"></div>
-            <button id="btnSolve" class="btn-solve" onclick="runSolver()" data-key="solve">✨ 計算最佳解 ✨</button>
-            <button id="btnNext" class="btn-next" onclick="applyNextStep()" disabled data-key="next">執行這一步 ▶</button>
+        </div>
+
+        <div class="controls">
+            <button id="btnUndo" class="btn-undo" onclick="undoBoard()" disabled data-key="undo">↺ 復原</button>
+            <button id="btnFill" class="btn-fill" onclick="fillBoard()" data-key="fill">⬛ 全滿</button>
+            <button id="btnClear" class="btn-clear" onclick="clearBoard()" data-key="clear">🗑 清空</button>
         </div>
     </div>
 
-    <div id="libModal" class="modal">
-        <div class="modal-header">
-            <h2 style="margin:0">
-                <span data-key="selectTitle">選擇方塊</span> 
-                <span style="font-size:0.9em; margin-left:5px;">(<span id="selCount">0</span>/3)</span>
-            </h2>
-            <div class="modal-controls">
-                <button id="btnConfirmSelection" class="confirm-btn" onclick="closeModal('libModal')" data-key="confirm">✔ 確定</button>
-                <button class="clear-sel-btn" onclick="clearSelection()">🗑</button>
-                <button class="close-btn" onclick="closeModal('libModal')">×</button>
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin:0"><span data-key="selectTitle">選擇方塊</span> <span style="font-size:0.8em">(<span id="selCount">0</span>/3)</span></h3>
+            <div class="sidebar-controls">
+                <button class="clear-sel-btn" onclick="clearSelection()" style="background:transparent;border:none;color:#E74C3C;font-size:1.5rem;">🗑</button>
             </div>
         </div>
-        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;" data-key="selectHint">點擊: +1 / -1 | 長按: 數量</div>
+        <div style="font-size: 0.8rem; color: #BDC3C7; margin-bottom: 10px;" data-key="selectHint">點擊: +1 / -1 | 長按: 選數量</div>
         <div id="libContent" class="library-content"></div>
     </div>
 
     <div id="qtyOverlay" class="qty-overlay" onclick="hideQtyPopup()"></div> 
     <div id="qtyPopup" class="qty-popup">
-        <button class="qty-btn" onclick="setQty(1)">1</button>
-        <button class="qty-btn" onclick="setQty(2)">2</button>
-        <button class="qty-btn" onclick="setQty(3)">3</button>
+        <button class="qty-btn" onclick="selectQty(1)">1</button>
+        <button class="qty-btn" onclick="selectQty(2)">2</button>
+        <button class="qty-btn" onclick="selectQty(3)">3</button>
     </div>
 
     <div id="helpModal" class="modal">
-        <div class="modal-header">
-            <h2 style="margin:0" data-key="helpTitle">使用指南</h2>
-            <button class="close-btn" onclick="closeModal('helpModal')">×</button>
-        </div>
-        <div class="help-content">
-            <div id="helpText"></div> 
-            <div class="help-footer">
-                <p data-key="contact">還有問題嗎？</p>
-                <a href="mailto:jerry1221yen@gmail.com">📩 jerry1221yen@gmail.com</a>
+        <div class="modal-container">
+            <button class="modal-close-outer" onclick="closeHelp()">×</button>
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h2 style="margin:0; width:100%; text-align:center;" data-key="helpTitle">使用指南</h2>
+                </div>
+                <div class="help-content" id="helpText"></div>
             </div>
         </div>
     </div>
 
 <script>
-// ==================== 多語言設定 ====================
+// ==========================================
+// 0. 多語言 (i18n)
+// ==========================================
 const TRANSLATIONS = {
     zh: {
-        title: "Block Blast Solver",
-        undo: "↺ 上一步",
-        clear: "🗑 清空",
-        solve: "✨ 計算最佳解 ✨",
+        title: "Block Blast 解題器",
+        undo: "↺ 復原", prev: "⏮ 上一步", fill: "⬛ 全滿", clear: "🗑 清空",
+        solve: "✨ 計算最佳解 ✨", next_step: "執行 步驟 ", finish: "✔ 完成",
         calculating: "計算中...",
-        next: "執行這一步 ▶",
-        finish: "完成 (點擊確認)",
-        handLabel: "本輪方塊 (點擊減少)",
-        empty: "(空)",
-        selectTitle: "選擇方塊",
-        selectHint: "點擊: +1 / -1 | 長按: 選數量",
-        helpTitle: "使用指南",
-        contact: "還有問題嗎？寄信給我：",
-        categories: ["基本 (點、斜、線)", "方塊 & T型 & Z型", "小 L (3格)", "中 L (4格)", "大 L (5格)"],
-        msg_select: "請先選擇方塊！",
-        msg_nosol: "❌ 無解！(Game Over)",
-        msg_done: "🎉 完成！請重新選方塊",
-        msg_step: "步驟",
-        msg_clear: "消",
-        msg_row: "行",
-        confirm: "✔ 確定",
-        helpBody: `<h3>1. 設定盤面</h3><ul><li>手指在棋盤上滑動可快速塗黑/擦除障礙物。</li></ul><h3>2. 選擇方塊</h3><ul><li>點擊左上角 ▦ 按鈕打開方塊庫。</li><li><b>單點：</b>若0則+1，若有則-1。</li><li><b>長按：</b>設定數量 1~3。</li></ul><h3>3. 計算</h3><ul><li>按下「計算最佳解」。</li><li>綠色為建議位置，金色代表消除。</li><li>按「執行這一步」推進，結束按「完成」。</li></ul>`
+        handLabel: "本輪方塊 (點擊 x 刪除)",
+        selectTitle: "選擇方塊", selectHint: "點擊: +1/-1 | 長按: 選數量",
+        helpTitle: "使用指南", contact: "還有問題嗎？寄信給我：",
+        cat_dot: "點 & 斜線", cat_line: "直線", cat_sq: "方塊", cat_t: "T 型", cat_z: "Z 型 (橫/直)",
+        cat_l2: "小 L (3格)", cat_l3_l: "中 L (4格 - L型)", cat_l3_j: "中 L (4格 - J型)", cat_lbig: "大 L (5格)",
+        msg_select: "請先選擇方塊！", msg_nosol: "❌ 無解！", msg_done: "🎉 完成！",
+        msg_step: "步驟", msg_clear: "消", msg_row: "行",
+        helpBody: `<h3>1. 設定盤面</h3><p>手指在棋盤上滑動可快速塗黑/擦除。<br>按「全滿」可填滿所有格子。</p><h3>2. 選擇方塊</h3><p>點左上角 ☰ 打開選單。<br><b>單點：</b>加入/移除。<br><b>長按：</b>設定數量。</p><h3>3. 計算</h3><p>按「計算最佳解」。<br>綠色=放置，金色=消除。</p>`
     },
     en: {
         title: "Block Blast Solver",
-        undo: "↺ Undo",
-        clear: "🗑 Clear",
-        solve: "✨ Solve ✨",
+        undo: "↺ Undo", prev: "⏮ Prev", fill: "⬛ Fill", clear: "🗑 Clear",
+        solve: "✨ Solve ✨", next_step: "Do Step ", finish: "✔ Done",
         calculating: "Calculating...",
-        next: "Next Step ▶",
-        finish: "Finish (Click to Fix)",
-        handLabel: "Current Pieces (Tap to remove)",
-        empty: "(Empty)",
-        selectTitle: "Select Pieces",
-        selectHint: "Tap: +1 / -1 | Hold: Quantity",
-        helpTitle: "User Guide",
-        contact: "Questions? Email me:",
-        categories: ["Basic (Dot, Diag, Line)", "Square & T & Z", "Small L (3)", "Medium L (4)", "Large L (5)"],
-        msg_select: "Please select pieces first!",
-        msg_nosol: "❌ No Solution!",
-        msg_done: "🎉 Done! Pick new pieces.",
-        msg_step: "Step",
-        msg_clear: "Clear",
-        msg_row: "lines",
-        confirm: "✔ OK",
-        helpBody: `<h3>1. Setup Board</h3><ul><li>Swipe on the board to paint/erase blocks.</li></ul><h3>2. Select Pieces</h3><ul><li>Tap ▦ to open library.</li><li><b>Tap:</b> Add 1 if empty, else Remove 1.</li><li><b>Hold:</b> Set Quantity 1-3.</li></ul><h3>3. Solve</h3><ul><li>Tap "Solve".</li><li>Green shows placement, Gold shows clearing.</li><li>Tap "Next Step" to proceed.</li></ul>`
+        handLabel: "Current Pieces (Tap x to remove)",
+        selectTitle: "Select Pieces", selectHint: "Tap: +1/-1 | Hold: Qty",
+        helpTitle: "User Guide", contact: "Questions? Email me:",
+        cat_dot: "Dots & Diag", cat_line: "Lines", cat_sq: "Squares", cat_t: "T-Shape", cat_z: "Z-Shape",
+        cat_l2: "Small L (3)", cat_l3_l: "Mid L (L)", cat_l3_j: "Mid L (J)", cat_lbig: "Big L (5)",
+        msg_select: "Select pieces first!", msg_nosol: "❌ No Solution!", msg_done: "🎉 Done!",
+        msg_step: "Step", msg_clear: "Clear", msg_row: "lines",
+        helpBody: `<h3>1. Setup Board</h3><p>Swipe to paint/erase blocks.<br>Tap "Fill" to fill all.</p><h3>2. Select Pieces</h3><p>Tap ☰ to open menu.<br><b>Tap:</b> Add/Remove.<br><b>Hold:</b> Set Quantity.</p><h3>3. Solve</h3><p>Tap "Solve".<br>Green=Place, Gold=Clear.</p>`
     },
-    jp: {
-        title: "ブロックパズル解法ツール",
-        undo: "↺ 元に戻す",
-        clear: "🗑 クリア",
-        solve: "✨ 計算する ✨",
-        calculating: "計算中...",
-        next: "次のステップ ▶",
-        finish: "完了 (確定する)",
-        handLabel: "手持ち (タップで削除)",
-        empty: "(空)",
-        selectTitle: "ブロック選択",
-        selectHint: "タップ: +1 / -1 | 長押し: 数量",
-        helpTitle: "使い方",
-        contact: "質問がありますか？メール：",
-        categories: ["基本 (点, 斜め, 線)", "四角 & T型 & Z型", "小 L (3)", "中 L (4)", "大 L (5)"],
-        msg_select: "先にブロックを選んでください！",
-        msg_nosol: "❌ 解なし！",
-        msg_done: "🎉 完了！次へ",
-        msg_step: "手順",
-        msg_clear: "消去",
-        msg_row: "行",
-        confirm: "✔ 確定",
-        helpBody: `<h3>1. 盤面設定</h3><ul><li>盤面をスワイプしてブロックを描画/消去します。</li></ul><h3>2. ブロック選択</h3><ul><li>▦ ボタンでメニューを開きます。</li><li><b>タップ：</b>0なら追加、あれば1つ減らす。</li><li><b>長押し：</b>個数を選択。</li></ul><h3>3. 実行</h3><ul><li>「計算する」をタップ。</li><li>緑色は配置場所、金色は消える行です。</li></ul>`
-    },
-    kr: {
-        title: "블록 블라스트 솔버",
-        undo: "↺ 실행 취소",
-        clear: "🗑 지우기",
-        solve: "✨ 해결하기 ✨",
-        calculating: "계산 중...",
-        next: "다음 단계 ▶",
-        finish: "완료 (확정)",
-        handLabel: "현재 블록 (탭하여 삭제)",
-        empty: "(비어 있음)",
-        selectTitle: "블록 선택",
-        selectHint: "탭: +1 / -1 | 길게: 수량",
-        helpTitle: "사용 가이드",
-        contact: "문의 사항:",
-        categories: ["기본 (점, 대각선, 선)", "사각형 & T자 & Z자", "소형 L (3)", "중형 L (4)", "대형 L (5)"],
-        msg_select: "블록을 먼저 선택하세요!",
-        msg_nosol: "❌ 해결 불가!",
-        msg_done: "🎉 완료!",
-        msg_step: "단계",
-        msg_clear: "제거",
-        msg_row: "줄",
-        confirm: "✔ 확인",
-        helpBody: `<h3>1. 보드 설정</h3><ul><li>보드를 드래그하여 블록을 그립니다.</li></ul><h3>2. 블록 선택</h3><ul><li>▦ 버튼을 눌러 메뉴를 엽니다.</li><li><b>탭:</b> 없으면 추가, 있으면 1개 삭제.</li><li><b>길게:</b> 수량 선택.</li></ul><h3>3. 실행</h3><ul><li>"해결하기"를 누릅니다.</li><li>녹색은 배치 위치, 금색은 제거되는 줄입니다.</li></ul>`
-    }
+    jp: { title: "ブロックパズル解法", undo: "↺ 戻る", prev: "⏮ 前へ", fill: "⬛ 全埋", clear: "🗑 削除", solve: "✨ 計算 ✨", next_step: "実行：手順 ", finish: "✔ 完了", calculating: "計算中...", handLabel: "手持ち", selectTitle: "選択", selectHint: "タップ:+/- | 長押し:数量", helpTitle: "使い方", contact: "質問？", 
+    cat_dot: "点 & 斜め", cat_line: "直線", cat_sq: "四角", cat_t: "T型", cat_z: "Z型", cat_l2: "小 L", cat_l3_l: "中 L (L)", cat_l3_j: "中 L (J)", cat_lbig: "大 L",
+    msg_select: "ブロックを選択！", msg_nosol: "❌ 解なし", msg_done: "🎉 完了", msg_step: "手順", msg_clear: "消去", msg_row: "行", helpBody: `<h3>1. 盤面設定</h3><p>スワイプでブロックを描画。<br>「全埋」で全て埋める。</p><h3>2. 選択</h3><p>☰ でメニューを開く。<br><b>タップ：</b>追加/削除。<br><b>長押し：</b>数量指定。</p>` },
+    
+    kr: { title: "블록 퍼즐 솔버", undo: "↺ 취소", prev: "⏮ 이전", fill: "⬛ 채우기", clear: "🗑 지우기", solve: "✨ 해결 ✨", next_step: "실행: 단계 ", finish: "✔ 완료", calculating: "계산 중...", handLabel: "현재 블록", selectTitle: "선택", selectHint: "탭: +/- | 길게: 수량", helpTitle: "사용법", contact: "문의:", 
+    cat_dot: "기본", cat_line: "직선", cat_sq: "사각형", cat_t: "T자", cat_z: "Z자", cat_l2: "소 L", cat_l3_l: "중 L (L)", cat_l3_j: "중 L (J)", cat_lbig: "대 L",
+    msg_select: "블록 선택!", msg_nosol: "❌ 해결 불가", msg_done: "🎉 완료", msg_step: "단계", msg_clear: "제거", msg_row: "줄", helpBody: `<h3>1. 보드 설정</h3><p>드래그하여 그리기.<br>「채우기」로 전체 채움.</p><h3>2. 선택</h3><p>☰ 메뉴 열기.<br><b>탭:</b> 추가/삭제.<br><b>길게:</b> 수량.</p>` }
 };
 
 let currentLang = 'zh';
 
-// ==================== 資料與設定 ====================
+// ==========================================
+// 1. 資料定義
+// ==========================================
 const SHAPES = {
     '1': [[1]],
-    '2h': [[1,1]], '3h': [[1,1,1]], '4h': [[1,1,1,1]], '5h': [[1,1,1,1,1]],
-    '2v': [[1],[1]], '3v': [[1],[1],[1]], '4v': [[1],[1],[1],[1]], '5v': [[1],[1],[1],[1],[1]],
     'd2': [[1,0],[0,1]], 'd2_r': [[0,1],[1,0]],
     'd3': [[1,0,0],[0,1,0],[0,0,1]], 'd3_r': [[0,0,1],[0,1,0],[1,0,0]],
+    '2h': [[1,1]], '3h': [[1,1,1]], '4h': [[1,1,1,1]], '5h': [[1,1,1,1,1]],
+    '2v': [[1],[1]], '3v': [[1],[1],[1]], '4v': [[1],[1],[1],[1]], '5v': [[1],[1],[1],[1],[1]],
     '2x2': [[1,1],[1,1]], '2x3': [[1,1,1],[1,1,1]], '3x2': [[1,1],[1,1],[1,1]], '3x3': [[1,1,1],[1,1,1],[1,1,1]],
-    'T3': [[1,1,1],[0,1,0]], 'T3_r': [[0,1],[1,1],[0,1]], 'T3_m': [[0,1,0],[1,1,1]], 'T3_mr': [[1,0],[1,1],[1,0]],
-    'z3': [[1,1,0],[0,1,1]], 'z3_r': [[0,1,1],[1,1,0]], 'z3v': [[0,1],[1,1],[1,0]], 'z3v_r': [[1,0],[1,1],[0,1]],
-    'L2': [[1,0],[1,1]], 'L2_r': [[1,1],[1,0]], 'L2_m': [[1,1],[0,1]], 'L2_mr': [[0,1],[1,1]],
-    'L3_2': [[1,0],[1,0],[1,1]], 'L3_2_inv': [[1,1],[1,0],[1,0]], 
-    'L3_2_r': [[1,1,1],[1,0,0]], 'L3_2_r_inv': [[0,0,1],[1,1,1]],
-    'J3_2': [[0,1],[0,1],[1,1]], 'J3_2_inv': [[1,1],[0,1],[0,1]],
-    'J3_2_r': [[1,1,1],[0,0,1]], 'J3_2_r_inv': [[1,0,0],[1,1,1]],
-    'L3': [[1,0,0],[1,0,0],[1,1,1]], 'L3_m': [[1,1,1],[0,0,1],[0,0,1]],
-    'L3_r': [[1,1,1],[1,0,0],[1,0,0]],'L3_mr': [[0,0,1],[0,0,1],[1,1,1]],
-    'J3': [[0,0,1],[0,0,1],[1,1,1]], 'J3_r': [[1,1,1],[0,0,1],[0,0,1]]
+    'T_0': [[1,1,1],[0,1,0]], 'T_90': [[0,1],[1,1],[0,1]], 'T_180': [[0,1,0],[1,1,1]], 'T_270': [[1,0],[1,1],[1,0]],
+    'Z_h': [[1,1,0],[0,1,1]], 'S_h': [[0,1,1],[1,1,0]], 'Z_v': [[0,1],[1,1],[1,0]], 'S_v': [[1,0],[1,1],[0,1]],
+    'L2_0': [[1,0],[1,1]], 'L2_90': [[1,1],[1,0]], 'L2_180': [[1,1],[0,1]], 'L2_270': [[0,1],[1,1]],
+    'L3_2_0': [[1,0],[1,0],[1,1]], 'L3_2_90': [[1,1,1],[1,0,0]], 'L3_2_180': [[1,1],[0,1],[0,1]], 'L3_2_270': [[0,0,1],[1,1,1]],
+    'J3_2_0': [[0,1],[0,1],[1,1]], 'J3_2_90': [[1,0,0],[1,1,1]], 'J3_2_180': [[1,1],[1,0],[1,0]], 'J3_2_270': [[1,1,1],[0,0,1]],
+    'L4_0': [[1,0,0],[1,0,0],[1,1,1]], 'L4_90': [[1,1,1],[1,0,0],[1,0,0]], 
+    'L4_180': [[1,1,1],[0,0,1],[0,0,1]], 'L4_270': [[0,0,1],[0,0,1],[1,1,1]]
 };
 
 const CATEGORIES = [
-    { key: 0, list: ['1', 'd2', 'd2_r', 'd3', 'd3_r', '2h', '3h', '4h', '5h', '2v', '3v', '4v', '5v'] },
-    { key: 1, list: ['2x2', '2x3', '3x2', '3x3', 'T3', 'T3_r', 'T3_m', 'T3_mr', 'z3', 'z3_r', 'z3v', 'z3v_r'] },
-    { key: 2, list: ['L2', 'L2_r', 'L2_m', 'L2_mr'] },
-    { key: 3, list: ['L3_2', 'J3_2', 'L3_2_inv', 'J3_2_inv', 'L3_2_r', 'J3_2_r', 'L3_2_r_inv', 'J3_2_r_inv'] },
-    { key: 4, list: ['L3', 'L3_r', 'L3_m', 'L3_mr', 'J3', 'J3_r'] }
+    { key: 'cat_dot', list: ['1', 'd2', 'd2_r', 'd3', 'd3_r'] },
+    { key: 'cat_line', list: ['2h', '3h', '4h', '5h', '2v', '3v', '4v', '5v'] },
+    { key: 'cat_sq', list: ['2x2', '2x3', '3x2', '3x3'] },
+    { key: 'cat_t', list: ['T_0', 'T_90', 'T_180', 'T_270'] },
+    { key: 'cat_z', list: ['Z_h', 'S_h', 'Z_v', 'S_v'] },
+    { key: 'cat_l2', list: ['L2_0', 'L2_90', 'L2_180', 'L2_270'] },
+    { key: 'cat_l3_l', list: ['L3_2_0', 'L3_2_90', 'L3_2_180', 'L3_2_270'] },
+    { key: 'cat_l3_j', list: ['J3_2_0', 'J3_2_90', 'J3_2_180', 'J3_2_270'] },
+    { key: 'cat_lbig', list: ['L4_0', 'L4_90', 'L4_180', 'L4_270'] }
 ];
 
-function getColor(name) { return '#95A5A6'; }
+function getColor(name) {
+    if (name === '1') return 'var(--color-dot)';
+    if (name.startsWith('d')) return 'var(--color-diag)';
+    if (name.startsWith('L2')) return 'var(--color-l-small)';
+    if (name.includes('L3_2')) return 'var(--color-l-mid)';
+    if (name.includes('J3_2')) return 'var(--color-l-mid-j)';
+    if (name.startsWith('L4')) return 'var(--color-l-big)';
+    if (name.includes('h') || (name.includes('v') && !name.includes('Z') && !name.includes('S'))) return 'var(--color-line)';
+    if (name.includes('x')) return 'var(--color-square)';
+    if (name.startsWith('T')) return 'var(--color-t)';
+    if (name.startsWith('Z') || name.startsWith('S')) return 'var(--color-z)';
+    return '#95A5A6';
+}
 
-// ==================== 狀態 ====================
+// ==========================================
+// 狀態
+// ==========================================
 let board = Array(8).fill().map(() => Array(8).fill(0));
 let newlyPlacedCells = []; 
 let clearingCells = [];    
@@ -505,291 +353,199 @@ let solutionSteps = [];
 let currentStepIdx = 0;
 let isDragging = false;
 let paintMode = 1; 
-let isCalculating = false; 
 let currentLongPressName = null;
+let solverState = 'idle';
 
-const boardWrapper = document.getElementById('boardWrapper');
 const boardEl = document.getElementById('board');
 const handEl = document.getElementById('hand');
 const libContentEl = document.getElementById('libContent');
-const selCountEl = document.getElementById('selCount');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
 const statusEl = document.getElementById('status');
-const btnNext = document.getElementById('btnNext');
-const btnSolve = document.getElementById('btnSolve');
+const btnAction = document.getElementById('btnAction');
 const btnUndo = document.getElementById('btnUndo');
 const btnClear = document.getElementById('btnClear');
-const langMenu = document.getElementById('langMenu');
-const helpText = document.getElementById('helpText');
-const btnConfirmSelection = document.getElementById('btnConfirmSelection');
 const qtyPopup = document.getElementById('qtyPopup');
 const qtyOverlay = document.getElementById('qtyOverlay');
+const langMenu = document.getElementById('langMenu');
 
 function init() {
     renderBoard();
-    renderLibraryMenu(); 
     updateLanguage(); 
-    
-    // 這裡只負責重置拖曳狀態
+    checkDailyHelp(); 
     document.addEventListener('mouseup', () => { isDragging = false; });
     document.addEventListener('touchend', () => { isDragging = false; });
-    
-    // 禁止 board 的右鍵選單
     boardEl.oncontextmenu = function(e) { e.preventDefault(); return false; };
-    
     btnUndo.disabled = true;
 }
 
-// ==================== 語言 ====================
+function checkDailyHelp() {
+    const lastDate = localStorage.getItem('block_blast_last_visit');
+    const today = new Date().toISOString().split('T')[0]; 
+    if (lastDate !== today) {
+        openHelp();
+        localStorage.setItem('block_blast_last_visit', today);
+    }
+}
+
 function toggleLangMenu() { langMenu.classList.toggle('show'); }
 function setLang(lang) {
     currentLang = lang;
     updateLanguage();
     langMenu.classList.remove('show');
+    renderLibraryMenu(); 
+    renderHand();
+    resetSolution(); 
 }
+
+function openHelp() { document.getElementById('helpModal').classList.add('show'); }
+function closeHelp() { document.getElementById('helpModal').classList.remove('show'); }
 
 function updateLanguage() {
     const t = TRANSLATIONS[currentLang];
     document.querySelector('h1').innerText = t.title;
-    document.querySelector('[data-key="undo"]').innerText = t.undo;
-    document.querySelector('[data-key="clear"]').innerText = t.clear;
-    document.querySelector('[data-key="solve"]').innerText = isCalculating ? t.calculating : t.solve;
-    document.querySelector('[data-key="confirm"]').innerText = t.confirm; 
     
-    if (btnNext.disabled && currentStepIdx >= solutionSteps.length && solutionSteps.length > 0) {
-        btnNext.innerText = t.finish;
-    } else {
-        btnNext.innerText = t.next;
-    }
+    // Undo button text
+    const undoText = (solutionSteps.length > 0) ? t.prev : t.undo;
+    document.getElementById('btnUndo').innerText = undoText;
+    
+    updateActionButtonState();
 
+    document.querySelector('[data-key="fill"]').innerText = t.fill;
+    document.querySelector('[data-key="clear"]').innerText = t.clear;
     document.querySelector('[data-key="handLabel"]').innerText = t.handLabel;
-    document.querySelector('[data-key="empty"]').innerText = t.empty;
     document.querySelector('[data-key="selectTitle"]').innerText = t.selectTitle;
     document.querySelector('[data-key="selectHint"]').innerText = t.selectHint;
     document.querySelector('[data-key="helpTitle"]').innerText = t.helpTitle;
-    document.querySelector('[data-key="contact"]').innerText = t.contact;
-    
-    const titles = document.querySelectorAll('.category-title');
-    titles.forEach((el, idx) => { el.innerText = t.categories[idx]; });
-    helpText.innerHTML = t.helpBody;
+    document.getElementById('helpText').innerHTML = t.helpBody + `<div class="help-footer"><p>${t.contact}</p><a href="mailto:jerry1221yen@gmail.com">📩 jerry1221yen@gmail.com</a></div>`;
 }
 
-// ==================== 渲染 ====================
-function renderBoard() {
-    boardEl.innerHTML = '';
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            if (board[r][c] === 1) {
-                const isNew = newlyPlacedCells.some(p => p.r === r && p.c === c);
-                if (isNew) cell.classList.add('new'); 
-                else cell.classList.add('filled'); 
-            }
-            if (clearingCells.some(p => p.r === r && p.c === c)) {
-                cell.classList.add('clearing');
-            }
-            cell.dataset.r = r; cell.dataset.c = c;
-            
-            // ★★★ v10.3 核心：綁定事件到格子 ★★★
-            cell.addEventListener('mousedown', onPointerDown);
-            cell.addEventListener('mouseenter', onPointerEnter);
-            cell.addEventListener('touchstart', onPointerDown, {passive: false});
-            
-            boardEl.appendChild(cell);
+function handleAction() {
+    if (solverState === 'idle') {
+        runSolver();
+    } else if (solverState === 'solved') {
+        // 如果當前步驟已經 >= 總步驟，代表要執行「完成」動作
+        if (currentStepIdx >= solutionSteps.length) {
+            finalizeRound();
+        } else {
+            applyNextStep();
         }
     }
-    // board容器也要綁定 move 以支持滑動
-    boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
+}
+
+function updateActionButtonState() {
+    const t = TRANSLATIONS[currentLang];
+    if (solverState === 'idle') {
+        btnAction.innerText = t.solve;
+        btnAction.className = "btn-action"; 
+    } else if (solverState === 'solved') {
+        if (currentStepIdx >= solutionSteps.length) {
+             btnAction.innerText = t.finish;
+             btnAction.className = "btn-action finish";
+        } else {
+             btnAction.innerText = t.next_step + (currentStepIdx + 1) + " ▶";
+             btnAction.className = "btn-action step";
+        }
+    }
+}
+
+function openSidebar() { renderLibraryMenu(); updateLibraryUI(); sidebar.classList.add('show'); sidebarOverlay.classList.add('show'); }
+function closeSidebar() { sidebar.classList.remove('show'); sidebarOverlay.classList.remove('show'); hideQtyPopup(); }
+function fillBoard() { if (solutionSteps.length > 0) return; saveState(); board = Array(8).fill().map(() => Array(8).fill(1)); newlyPlacedCells = []; renderBoard(); resetSolution(); }
+
+function renderBoard() {
+    if (boardEl.children.length !== 64) {
+        boardEl.innerHTML = '';
+        for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.r = r; cell.dataset.c = c;
+                cell.addEventListener('mousedown', onPointerDown);
+                cell.addEventListener('mouseenter', onPointerEnter);
+                cell.addEventListener('touchstart', onPointerDown, {passive: false});
+                boardEl.appendChild(cell);
+            }
+        }
+        boardEl.addEventListener('touchmove', onTouchMove, {passive: false});
+    }
+    
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const idx = r * 8 + c;
+            const cell = boardEl.children[idx];
+            cell.className = 'cell'; 
+            cell.innerText = ''; 
+            
+            if (board[r][c] === 1) cell.classList.add('filled');
+            if (newlyPlacedCells.some(p => p.r === r && p.c === c)) { cell.classList.remove('filled'); cell.classList.add('new'); }
+            if (clearingCells.some(p => p.r === r && p.c === c)) { cell.classList.add('clearing'); }
+        }
+    }
 }
 
 function renderLibraryMenu() {
     libContentEl.innerHTML = '';
+    const t = TRANSLATIONS[currentLang];
     CATEGORIES.forEach(cat => {
-        const title = document.createElement('div');
-        title.className = 'category-title';
-        libContentEl.appendChild(title);
-        const grid = document.createElement('div');
-        grid.className = 'lib-grid';
+        const title = document.createElement('div'); title.className = 'category-title'; title.innerText = t[cat.key]; libContentEl.appendChild(title);
+        const grid = document.createElement('div'); grid.className = 'lib-grid'; 
         cat.list.forEach(name => {
             if (!SHAPES[name]) return;
-            const div = document.createElement('div');
-            div.className = 'lib-piece';
-            div.dataset.name = name; 
-            setupLibraryItemEvents(div, name);
-            const badge = document.createElement('div');
-            badge.className = 'count-badge';
-            div.appendChild(badge);
-            
-            const preview = createShapeElement(SHAPES[name], 6);
-            div.appendChild(preview);
-            
-            grid.appendChild(div);
+            const div = document.createElement('div'); div.className = 'lib-piece'; div.dataset.name = name; 
+            setupLibraryItemEvents(div, name); 
+            const badge = document.createElement('div'); badge.className = 'count-badge'; div.appendChild(badge);
+            const canvas = drawShapeCanvas(SHAPES[name], 8, getColor(name)); div.appendChild(canvas); grid.appendChild(div);
         });
         libContentEl.appendChild(grid);
     });
 }
 
-function renderHand() {
-    handEl.innerHTML = '';
-    if (hand.length === 0) {
-        handEl.innerHTML = `<span style="color: #777;" data-key="empty">${TRANSLATIONS[currentLang].empty}</span>`;
-        return;
-    }
-    hand.forEach((item, idx) => {
-        const div = document.createElement('div');
-        div.className = 'hand-piece';
-        div.onclick = () => { removeFromHand(idx); }; 
-        
-        const preview = createShapeElement(item.shape, 8);
-        div.appendChild(preview);
-        
-        const removeBtn = document.createElement('div');
-        removeBtn.className = 'remove-btn';
-        removeBtn.innerText = 'x';
-        div.appendChild(removeBtn);
-        handEl.appendChild(div);
-    });
-}
-
-function createShapeElement(shape, cellSize) {
-    const rows = shape.length;
-    const cols = shape[0].length;
-    const wrapper = document.createElement('div');
-    wrapper.className = 'mini-grid-wrapper';
-    const grid = document.createElement('div');
-    grid.className = 'mini-grid';
-    grid.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
-    grid.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
-    for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-            const cell = document.createElement('div');
-            if (shape[r][c] === 1) cell.className = 'mini-cell';
-            grid.appendChild(cell);
-        }
-    }
-    wrapper.appendChild(grid);
-    return wrapper;
-}
-
-// ==================== 互動 ====================
 function setupLibraryItemEvents(element, name) {
     let pressTimer; let isLongPress = false;
-    
-    const startPress = (e) => {
+    const start = (e) => {
         if (e.type === 'touchstart' && e.touches.length > 1) return;
         isLongPress = false;
-        
-        pressTimer = setTimeout(() => { 
-            isLongPress = true; 
-            handleLongPress(e, element, name); 
-        }, 500);
+        pressTimer = setTimeout(() => { isLongPress = true; handleLongPress(e, element, name); }, 500);
     };
-
-    const cancelPress = () => { 
-        if (pressTimer) clearTimeout(pressTimer); 
-    };
-
-    const endPress = (e) => {
+    const cancel = () => { if (pressTimer) clearTimeout(pressTimer); };
+    const end = (e) => {
         if (pressTimer) clearTimeout(pressTimer);
-        
-        if (!isLongPress) {
-            if (e.type === 'touchend') e.preventDefault();
-            handleTap(name); 
-        }
+        if (!isLongPress) { if (e.type === 'touchend') e.preventDefault(); handleTap(name); }
     };
-
-    element.addEventListener('mousedown', startPress);
-    element.addEventListener('mouseleave', cancelPress);
-    element.addEventListener('mouseup', endPress);
-    element.addEventListener('touchstart', startPress, {passive: false});
-    element.addEventListener('touchmove', cancelPress, {passive: true}); 
-    element.addEventListener('touchend', endPress);
+    element.addEventListener('mousedown', start); element.addEventListener('mouseleave', cancel); element.addEventListener('mouseup', end);
+    element.addEventListener('touchstart', start, {passive: false}); element.addEventListener('touchmove', cancel, {passive: true}); element.addEventListener('touchend', end);
 }
 
-function openLibrary() { updateLibraryUI(); document.getElementById('libModal').classList.add('show'); }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); hideQtyPopup(); }
-function openHelp() { document.getElementById('helpModal').classList.add('show'); }
-
-// ★★★ 單點邏輯 ★★★
 function handleTap(name) {
     const count = hand.filter(h => h.name === name).length;
-
-    if (count > 0) {
-        // 有 -> 減1
-        for (let i = hand.length - 1; i >= 0; i--) {
-            if (hand[i].name === name) {
-                removeFromHand(i); 
-                break; 
-            }
-        }
-    } else {
-        // 無 -> 加1
-        if (hand.length < 3) {
-            addToHand(name);
-            updateLibraryUI();
-            checkConfirmButton();
-            renderHand();
-            resetSolution();
-        }
-    }
+    if (count > 0) { for (let i = hand.length - 1; i >= 0; i--) { if (hand[i].name === name) { removeFromHand(i); break; } } } 
+    else { if (hand.length < 3) { addToHand(name); } }
 }
 
-// 長按
 function handleLongPress(e, element, name) {
     currentLongPressName = name;
     const rect = element.getBoundingClientRect();
-    qtyPopup.style.top = (rect.top - 50) + 'px';
-    qtyPopup.style.left = (rect.left + rect.width/2 - 60) + 'px'; 
-    qtyPopup.style.display = 'flex';
-    qtyOverlay.style.display = 'block'; 
+    qtyPopup.style.top = (rect.top - 50) + 'px'; qtyPopup.style.left = (rect.left + rect.width/2 - 60) + 'px'; 
+    qtyPopup.style.display = 'flex'; qtyOverlay.style.display = 'block'; 
 }
 
-function hideQtyPopup() {
-    qtyPopup.style.display = 'none';
-    qtyOverlay.style.display = 'none';
-    currentLongPressName = null;
+function selectQty(count) {
+    setQty(count);
 }
 
-// 選擇數量
 function setQty(count) {
     if (!currentLongPressName) return;
     hand = hand.filter(h => h.name !== currentLongPressName);
-    const spaceLeft = 3 - hand.length;
-    const toAdd = Math.min(count, spaceLeft);
+    const toAdd = Math.min(count, 3 - hand.length);
     for(let i=0; i<toAdd; i++) addToHand(currentLongPressName);
-    
-    renderHand(); 
-    updateLibraryUI(); 
-    checkConfirmButton(); 
-    resetSolution();
-    hideQtyPopup();
+    setTimeout(() => { hideQtyPopup(); }, 50);
 }
 
-function clearSelection() {
-    if(hand.length > 0) {
-        hand = [];
-        renderHand();
-        updateLibraryUI();
-        checkConfirmButton();
-        resetSolution();
-    }
-}
-
-function removeFromHand(idx) {
-    hand.splice(idx, 1);
-    renderHand(); 
-    updateLibraryUI(); 
-    checkConfirmButton();
-    resetSolution();
-}
-
-function checkConfirmButton() {
-    if (hand.length === 3) {
-        btnConfirmSelection.style.display = 'inline-block';
-    } else {
-        btnConfirmSelection.style.display = 'none';
-    }
-}
+function hideQtyPopup() { qtyPopup.style.display = 'none'; qtyOverlay.style.display = 'none'; currentLongPressName = null; }
+function clearSelection() { hand = []; renderHand(); updateLibraryUI(); resetSolution(); }
+function addToHand(name) { if (hand.length >= 3) return; hand.push({ name: name, shape: SHAPES[name] }); renderHand(); updateLibraryUI(); resetSolution(); }
+function removeFromHand(idx) { hand.splice(idx, 1); renderHand(); updateLibraryUI(); resetSolution(); }
 
 function updateLibraryUI() {
     const libPieces = document.querySelectorAll('.lib-piece');
@@ -797,26 +553,42 @@ function updateLibraryUI() {
         const name = div.dataset.name;
         const count = hand.filter(h => h.name === name).length;
         const badge = div.querySelector('.count-badge');
-        if (count > 0) {
-            div.classList.add('selected'); badge.innerText = 'x' + count; badge.style.display = 'block';
-        } else {
-            div.classList.remove('selected'); badge.style.display = 'none';
-        }
+        if (count > 0) { div.classList.add('selected'); badge.innerText = 'x' + count; badge.style.display = 'block'; } 
+        else { div.classList.remove('selected'); badge.style.display = 'none'; }
     });
-    const selCount = document.getElementById('selCount');
-    if(selCount) selCount.innerText = hand.length;
+    document.getElementById('selCount').innerText = hand.length;
 }
 
-// ==================== 盤面控制 (v4 Logic) ====================
-function lockBoard(locked) {
-    if (locked) boardWrapper.classList.add('locked');
-    else boardWrapper.classList.remove('locked');
+function renderHand() {
+    const t = TRANSLATIONS[currentLang];
+    handEl.innerHTML = '';
+    if (hand.length === 0) handEl.innerHTML = `<span style="color:#777;">${t.empty || "(Empty)"}</span>`;
+    hand.forEach((item, idx) => {
+        const div = document.createElement('div'); div.className = 'hand-piece'; div.onclick = () => removeFromHand(idx);
+        const canvas = drawShapeCanvas(item.shape, 10, getColor(item.name)); div.appendChild(canvas);
+        const removeBtn = document.createElement('div'); removeBtn.className = 'remove-btn'; removeBtn.innerText = 'x'; div.appendChild(removeBtn);
+        handEl.appendChild(div);
+    });
+}
+
+function drawShapeCanvas(shape, cellSize, color) {
+    const canvas = document.createElement('canvas');
+    const rows = shape.length; const cols = shape[0].length;
+    canvas.width = cols * cellSize; canvas.height = rows * cellSize;
+    const ctx = canvas.getContext('2d');
+    const colorMap = { 'dot': '#F1C40F', 'diag': '#1ABC9C', 'line': '#3498DB', 'square': '#E74C3C', 't': '#2ECC71', 'z': '#E67E22', 'l-small': '#FF80AB', 'l-mid': '#9B59B6', 'l-mid-j': '#E056FD', 'l-big': '#5C6BC0' };
+    let hex = '#95A5A6';
+    if(color.includes('dot')) hex = colorMap['dot']; else if(color.includes('diag')) hex = colorMap['diag']; else if(color.includes('l-mid-j')) hex = colorMap['l-mid-j']; else if(color.includes('l-mid')) hex = colorMap['l-mid']; else if(color.includes('l-big')) hex = colorMap['l-big']; else if(color.includes('l-small')) hex = colorMap['l-small']; else if(color.includes('line')) hex = colorMap['line']; else if(color.includes('square')) hex = colorMap['square']; else if(color.includes('t')) hex = colorMap['t']; else if(color.includes('z')) hex = colorMap['z'];
+    ctx.fillStyle = hex;
+    for(let r=0; r<rows; r++) for(let c=0; c<cols; c++) if(shape[r][c]) ctx.fillRect(c*cellSize, r*cellSize, cellSize-1, cellSize-1);
+    return canvas;
 }
 
 function saveState() {
     boardHistory.push({
         board: JSON.parse(JSON.stringify(board)),
-        newlyPlaced: JSON.parse(JSON.stringify(newlyPlacedCells))
+        newlyPlacedCells: JSON.parse(JSON.stringify(newlyPlacedCells)),
+        clearingCells: [] 
     });
     if(boardHistory.length > 20) boardHistory.shift();
     btnUndo.disabled = false;
@@ -826,117 +598,112 @@ function updateCell(r, c) {
     if (board[r][c] !== paintMode) {
         board[r][c] = paintMode;
         newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === r && p.c === c));
-        renderBoard(); resetSolution();
+        const idx = r * 8 + c;
+        const cell = boardEl.children[idx];
+        cell.classList.remove('new', 'filled');
+        if (paintMode === 1) cell.classList.add('filled');
+        resetSolution(); 
     }
+}
+
+function clearSolutionVisuals() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(c => {
+        c.classList.remove('preview', 'clearing');
+        c.innerText = ''; 
+    });
+    solutionSteps = [];
+    currentStepIdx = 0;
+    statusEl.innerText = '';
+    clearingCells = [];
+    solverState = 'idle';
+    updateActionButtonState();
+    const t = TRANSLATIONS[currentLang];
+    document.getElementById('btnUndo').innerText = t.undo;
+}
+
+// 核心修正：按下「完成」或「解題後觸碰」時觸發
+function finalizeRound() {
+    hand = [];
+    renderHand();
+    updateLibraryUI();
+    boardHistory = [];
+    btnUndo.disabled = true;
+    newlyPlacedCells = []; // 清除藍色標記
+    resetSolution(); // 清除解答並解鎖
 }
 
 function onPointerDown(e) {
-    if (solutionSteps.length > 0) return;
+    // 修正1：若還在執行步驟中，禁止操作
+    if (solutionSteps.length > 0 && currentStepIdx < solutionSteps.length) return; 
     
-    // v4 核心: 阻止預設事件
-    if (e.type === 'touchstart') e.preventDefault();
+    // 修正2：若停在「完成」狀態，直接點擊盤面 => 自動執行完成並允許編輯
+    if (solutionSteps.length > 0 && currentStepIdx >= solutionSteps.length) {
+        finalizeRound();
+    }
+
+    if (e.type === 'touchstart' && e.touches.length > 1) return;
     if (e.cancelable) e.preventDefault();
-
-    // v4 核心: 直接使用 e.target (或 currentTarget)
-    let target = e.currentTarget;
-    if (target && target.classList.contains('cell')) {
-        isDragging = true;
-        const r = parseInt(target.dataset.r);
-        const c = parseInt(target.dataset.c);
-        saveState();
-        paintMode = 1 - board[r][c];
-        updateCell(r, c);
-    }
-}
-
-function onPointerEnter(e) {
-    if (solutionSteps.length > 0) return; 
-    if (isDragging) {
-        const r = parseInt(this.dataset.r);
-        const c = parseInt(this.dataset.c);
-        updateCell(r, c);
-    }
-}
-
-// v4 核心: 滑動處理
-function onTouchMove(e) {
-    if (solutionSteps.length > 0) return; 
-    if (!isDragging) return;
-    if (e.cancelable) e.preventDefault();
+    let r, c;
+    if (e.type === 'touchstart') {
+        if (this.dataset && this.dataset.r !== undefined) { r = parseInt(this.dataset.r); c = parseInt(this.dataset.c); } 
+        else {
+            const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (target && target.classList.contains('cell')) { r = parseInt(target.dataset.r); c = parseInt(target.dataset.c); } else return;
+        }
+    } else { r = parseInt(this.dataset.r); c = parseInt(this.dataset.c); }
     
-    const touch = e.touches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    
-    if (target && target.classList.contains('cell')) {
-        const r = parseInt(target.dataset.r);
-        const c = parseInt(target.dataset.c);
-        updateCell(r, c);
-    }
+    isDragging = true;
+    saveState();
+    paintMode = 1 - board[r][c];
+    updateCell(r, c);
 }
+function onPointerEnter(e) { if (solutionSteps.length > 0 && currentStepIdx < solutionSteps.length) return; if (isDragging) { const r = parseInt(this.dataset.r); const c = parseInt(this.dataset.c); updateCell(r, c); } }
+function onTouchMove(e) { if (solutionSteps.length > 0 && currentStepIdx < solutionSteps.length) return; if (!isDragging) return; if (e.cancelable) e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (target && target.classList.contains('cell')) { const r = parseInt(target.dataset.r); const c = parseInt(target.dataset.c); updateCell(r, c); } }
 
 function clearBoard() {
     saveState();
     board = Array(8).fill().map(() => Array(8).fill(0));
-    newlyPlacedCells = []; clearingCells = [];
-    hand = []; 
-    renderHand();
-    updateLibraryUI();
-    checkConfirmButton(); 
-    renderBoard(); resetSolution(); lockBoard(false);
-    btnUndo.disabled = true; 
+    clearingCells = []; newlyPlacedCells = []; hand = [];
+    renderHand(); updateLibraryUI(); 
+    renderBoard(); resetSolution();
+    btnUndo.disabled = true;
 }
 
 function undoBoard() {
+    const t = TRANSLATIONS[currentLang];
     if (solutionSteps.length > 0) {
         if (currentStepIdx > 0) {
             if (boardHistory.length > 0) {
                 const state = boardHistory.pop();
                 board = state.board;
-                newlyPlacedCells = state.newlyPlaced || [];
+                newlyPlacedCells = state.newlyPlacedCells;
                 currentStepIdx--;
                 previewStep(); 
             }
         } else {
-            resetSolution();
+            resetSolution(); 
         }
         return;
     }
-
     if (boardHistory.length > 0) {
         const state = boardHistory.pop();
         board = state.board;
-        newlyPlacedCells = state.newlyPlaced || [];
-        clearingCells = [];
+        newlyPlacedCells = state.newlyPlacedCells || [];
         renderBoard();
-        
         if (boardHistory.length === 0) btnUndo.disabled = true;
     }
 }
 
-function addToHand(name) {
-    if (hand.length >= 3) return;
-    hand.push({ name: name, shape: SHAPES[name] });
-    renderHand(); resetSolution();
-}
-
-// ==================== 算法 ====================
 function resetSolution() {
-    solutionSteps = [];
-    currentStepIdx = 0;
-    statusEl.innerText = '';
-    isCalculating = false;
-    btnSolve.disabled = false;
-    btnSolve.innerText = TRANSLATIONS[currentLang].solve;
-    btnNext.disabled = true;
-    btnNext.innerText = TRANSLATIONS[currentLang].next;
-    btnClear.disabled = false;
-
-    clearingCells = []; 
-    renderBoard(); 
-    document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
-    lockBoard(false); 
+    clearSolutionVisuals();
+    btnAction.disabled = false;
+    btnClear.disabled = false; 
+    if (document.querySelector('.board-wrapper.locked')) document.querySelector('.board-wrapper').classList.remove('locked');
 }
 
+// ... (solve function same as v14.4) ...
 function solve(currentBoard, pieces) {
     let bestSol = null; let maxCleared = -1;
     function* permutations(arr) {
@@ -967,7 +734,6 @@ function solve(currentBoard, pieces) {
         let clearR = 0, clearC = 0;
         for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR++;
         for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearC++;
-        
         let cleared = clearR + clearC;
         if (cleared > 0) {
             let clearRows = [], clearCols = [];
@@ -997,7 +763,7 @@ function solve(currentBoard, pieces) {
                 }
             }
         }
-        validMoves.sort((x, y) => y.result.cleared - x.result.cleared);
+        validMoves.sort((x, y) => y.result.cleared - x.result.cleared); 
         for (let move of validMoves) {
             path.push({ name: current.name, r: move.r, c: move.c, cleared: move.result.cleared, shape });
             backtrack(move.result.board, rest, path, totalCleared + move.result.cleared);
@@ -1011,23 +777,28 @@ function solve(currentBoard, pieces) {
 }
 
 function runSolver() {
-    if (hand.length === 0) { statusEl.innerText = TRANSLATIONS[currentLang].msg_select; return; }
-    isCalculating = true;
-    btnSolve.disabled = true;
+    const t = TRANSLATIONS[currentLang];
+    if (hand.length === 0) { statusEl.innerText = t.msg_select; return; }
+    
+    statusEl.innerText = t.calculating;
+    btnAction.disabled = true; 
     btnClear.disabled = true;
-    btnSolve.innerText = TRANSLATIONS[currentLang].calculating;
-    statusEl.innerText = TRANSLATIONS[currentLang].calculating;
-
+    
     setTimeout(() => {
         const sol = solve(board, hand);
-        if (sol) { solutionSteps = sol; currentStepIdx = 0; previewStep(); } 
-        else { 
-            statusEl.innerText = TRANSLATIONS[currentLang].msg_nosol;
-            isCalculating = false;
-            btnSolve.disabled = false;
+        if (sol) {
+            solutionSteps = sol;
+            currentStepIdx = 0;
+            solverState = 'solved'; 
+            updateActionButtonState();
+            previewStep();
+            document.getElementById('btnUndo').innerText = t.prev;
+        } else {
+            statusEl.innerText = t.msg_nosol;
+            btnAction.disabled = false;
             btnClear.disabled = false;
-            btnSolve.innerText = TRANSLATIONS[currentLang].solve;
         }
+        btnAction.disabled = false;
     }, 50);
 }
 
@@ -1050,28 +821,29 @@ function getClearingCells(tempBoard, step) {
 function previewStep() {
     const t = TRANSLATIONS[currentLang];
     if (currentStepIdx >= solutionSteps.length) {
-        statusEl.innerText = t.msg_done;
-        statusEl.style.color = "#2ECC71";
-        btnNext.disabled = false;
-        btnNext.innerText = t.finish; 
+        statusEl.innerText = t.msg_done; statusEl.style.color = "#2ECC71";
+        
+        solverState = 'solved';
+        updateActionButtonState(); 
+        
+        // ★ 核心修正：不執行清空，只清除視覺特效
         clearingCells = [];
         renderBoard(); 
         document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
         return;
     }
 
-    lockBoard(true);
+    updateActionButtonState(); 
+    document.querySelector('.board-wrapper').classList.add('locked');
     const step = solutionSteps[currentStepIdx];
     statusEl.innerText = `${t.msg_step} ${currentStepIdx + 1}: ${t.msg_clear} ${step.cleared} ${t.msg_row}`;
     statusEl.style.color = "#F1C40F";
-    btnNext.disabled = false;
-    btnNext.innerText = t.next;
 
     clearingCells = getClearingCells(board, step);
-    renderBoard();
+    renderBoard(); 
 
-    const shape = step.shape;
     const cells = document.querySelectorAll('.cell');
+    const shape = step.shape;
     for(let i=0; i<shape.length; i++) {
         for(let j=0; j<shape[0].length; j++) {
             if (shape[i][j]) {
@@ -1083,13 +855,9 @@ function previewStep() {
 }
 
 function applyNextStep() {
-    const t = TRANSLATIONS[currentLang];
+    // 修正：按下「完成」
     if (currentStepIdx >= solutionSteps.length) {
-        newlyPlacedCells = []; 
-        hand = []; renderHand(); updateLibraryUI(); checkConfirmButton();
-        boardHistory = []; 
-        btnUndo.disabled = true; 
-        resetSolution(); 
+        finalizeRound();
         return;
     }
 
@@ -1100,7 +868,8 @@ function applyNextStep() {
         for(let j=0; j<step.shape[0].length; j++) {
             if (step.shape[i][j]) {
                 const r = step.r + i; const c = step.c + j;
-                board[r][c] = 1; newlyPlacedCells.push({r, c});
+                board[r][c] = 1;
+                newlyPlacedCells.push({r, c});
             }
         }
     }
@@ -1110,11 +879,13 @@ function applyNextStep() {
     for(let j=0; j<8; j++) if(board.every(row=>row[j]===1)) clearC.push(j);
     
     if (clearR.length > 0 || clearC.length > 0) {
-        for(let row of clearR) for(let j=0; j<8; j++) { 
-            board[row][j] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j)); 
+        for(let row of clearR) for(let j=0; j<8; j++) {
+            board[row][j] = 0; 
+            newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === row && p.c === j));
         }
-        for(let col of clearC) for(let i=0; i<8; i++) { 
-            board[i][col] = 0; newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col)); 
+        for(let col of clearC) for(let i=0; i<8; i++) {
+            board[i][col] = 0;
+            newlyPlacedCells = newlyPlacedCells.filter(p => !(p.r === i && p.c === col));
         }
     }
     
