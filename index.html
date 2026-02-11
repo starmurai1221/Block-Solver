@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Block Blast Solver v15.0</title>
+    <title>Block Blast Solver v15.2</title>
     <style>
         /* --- 🎨 美術設定 --- */
         :root {
@@ -424,7 +424,6 @@ function handleAction() {
     if (solverState === 'idle') {
         runSolver();
     } else if (solverState === 'solved') {
-        // 如果當前步驟已經 >= 總步驟，代表要執行「完成」動作
         if (currentStepIdx >= solutionSteps.length) {
             finalizeRound();
         } else {
@@ -703,9 +702,15 @@ function resetSolution() {
     if (document.querySelector('.board-wrapper.locked')) document.querySelector('.board-wrapper').classList.remove('locked');
 }
 
-// ... (solve function same as v14.4) ...
+// ----------------------------------------------------
+// ★★★ 全局搜尋演算法 (v15.2 - with Adjacency Heuristic) ★★★
+// ----------------------------------------------------
 function solve(currentBoard, pieces) {
-    let bestSol = null; let maxCleared = -1;
+    let bestSol = null;
+    let maxScore = -1;
+    let nodesVisited = 0;
+    const MAX_NODES = 200000;
+
     function* permutations(arr) {
         if (arr.length <= 1) yield arr;
         else {
@@ -715,6 +720,7 @@ function solve(currentBoard, pieces) {
             }
         }
     }
+
     function canPlace(b, piece, r, c) {
         const rows = piece.length; const cols = piece[0].length;
         if (r + rows > 8 || c + cols > 8) return false;
@@ -725,54 +731,115 @@ function solve(currentBoard, pieces) {
         }
         return true;
     }
+
+    // 核心新增：計算貼齊度 (Adjacency Score)
+    function calculateAdjacency(b, piece, r, c) {
+        let contacts = 0;
+        const rows = piece.length;
+        const cols = piece[0].length;
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                if (piece[i][j]) {
+                    const absR = r + i;
+                    const absC = c + j;
+                    // Check 4 sides (Up, Down, Left, Right)
+                    // If out of bounds OR occupied => Contact +1
+                    if (absR - 1 < 0 || b[absR - 1][absC]) contacts++;
+                    if (absR + 1 >= 8 || b[absR + 1][absC]) contacts++;
+                    if (absC - 1 < 0 || b[absR][absC - 1]) contacts++;
+                    if (absC + 1 >= 8 || b[absR][absC + 1]) contacts++;
+                }
+            }
+        }
+        return contacts;
+    }
+
     function placeAndCalculate(b, piece, r, c) {
         let newB = b.map(row => [...row]);
         const rows = piece.length; const cols = piece[0].length;
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) { if (piece[i][j]) newB[r + i][c + j] = 1; }
         }
-        let clearR = 0, clearC = 0;
-        for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR++;
-        for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearC++;
-        let cleared = clearR + clearC;
-        if (cleared > 0) {
-            let clearRows = [], clearCols = [];
-            for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearRows.push(i);
-            for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearCols.push(j);
-            for(let row of clearRows) for(let j=0; j<8; j++) newB[row][j] = 0;
-            for(let col of clearCols) for(let i=0; i<8; i++) newB[i][col] = 0;
+        
+        let cleared = 0;
+        let clearR = [], clearC = [];
+        for(let i=0; i<8; i++) if(newB[i].every(v=>v===1)) clearR.push(i);
+        for(let j=0; j<8; j++) if(newB.every(row=>row[j]===1)) clearC.push(j);
+        
+        if (clearR.length > 0 || clearC.length > 0) {
+            cleared = clearR.length + clearC.length;
+            for(let row of clearR) for(let j=0; j<8; j++) newB[row][j] = 0;
+            for(let col of clearC) for(let i=0; i<8; i++) newB[i][col] = 0;
         }
         return { board: newB, cleared: cleared };
     }
-    function backtrack(b, remainingPieces, path, totalCleared) {
-        if (remainingPieces.length === 0) {
-            if (totalCleared > maxCleared) { maxCleared = totalCleared; bestSol = [...path]; }
+
+    function dfs(boardState, remaining, path, currentScore) {
+        nodesVisited++;
+        if (nodesVisited > MAX_NODES) return;
+
+        if (remaining.length === 0) {
+            let isAllClear = true;
+            outer: for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(boardState[r][c] === 1) { isAllClear = false; break outer; }
+                }
+            }
+            let finalScore = currentScore + (isAllClear ? 50000 : 0); // All Clear Bonus
+
+            if (finalScore > maxScore) {
+                maxScore = finalScore;
+                bestSol = [...path];
+            }
             return;
         }
-        if (bestSol && maxCleared >= 5) return; 
-        const current = remainingPieces[0];
-        const rest = remainingPieces.slice(1);
-        const shape = current.shape;
+
+        const piece = remaining[0];
+        const nextRemaining = remaining.slice(1);
         
         let validMoves = [];
         for (let r = 0; r < 8; r++) {
             for (let c = 0; c < 8; c++) {
-                if (canPlace(b, shape, r, c)) {
-                    let result = placeAndCalculate(b, shape, r, c);
-                    validMoves.push({r, c, result});
+                if (canPlace(boardState, piece.shape, r, c)) {
+                    validMoves.push({r, c});
                 }
             }
         }
-        validMoves.sort((x, y) => y.result.cleared - x.result.cleared); 
+
+        if (validMoves.length === 0) {
+            if (currentScore > maxScore) {
+                maxScore = currentScore;
+                bestSol = [...path];
+            }
+            return;
+        }
+
         for (let move of validMoves) {
-            path.push({ name: current.name, r: move.r, c: move.c, cleared: move.result.cleared, shape });
-            backtrack(move.result.board, rest, path, totalCleared + move.result.cleared);
-            path.pop();
-            if (bestSol && maxCleared >= 5) return; 
+            let res = placeAndCalculate(boardState, piece.shape, move.r, move.c);
+            let adjacency = calculateAdjacency(boardState, piece.shape, move.r, move.c);
+            
+            // Score Formula: 
+            // Survival (1,000,000) >> Clear (1,000) >> Adjacency (1)
+            let moveScore = 1000000 + (res.cleared * 1000) + adjacency;
+            
+            let nextPath = [...path, { 
+                name: piece.name, 
+                r: move.r, 
+                c: move.c, 
+                cleared: res.cleared, 
+                shape: piece.shape 
+            }];
+
+            dfs(res.board, nextRemaining, nextPath, currentScore + moveScore);
         }
     }
+
     const perms = permutations(pieces);
-    for (const p of perms) { backtrack(currentBoard, p, [], 0); if (bestSol && maxCleared >=5) break; }
+    for (const p of perms) {
+        dfs(currentBoard, p, [], 0);
+        if (nodesVisited > MAX_NODES) break;
+    }
+
     return bestSol;
 }
 
@@ -826,7 +893,6 @@ function previewStep() {
         solverState = 'solved';
         updateActionButtonState(); 
         
-        // ★ 核心修正：不執行清空，只清除視覺特效
         clearingCells = [];
         renderBoard(); 
         document.querySelectorAll('.cell.preview').forEach(el => { el.classList.remove('preview'); el.innerText = ''; });
